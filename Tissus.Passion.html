@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tissus - Passion</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Georgia, serif;   /* FUTURE: swap for branded web font */
+      font-size: 16px;
+      line-height: 1.6;
+      color: #2c2c2c;
+      background-color: #faf8f5;     /* warm off-white – feels fabric-like */
+    }
+
+    /* ── CSS CUSTOM PROPERTIES (design tokens) ───────────────
+       Define colours, spacing, etc. once here so changing the
+       brand palette later is a single-file edit.
+    ───────────────────────────────────────────────────────── */
+    :root {
+      --color-brand:      #c34147;   /* warm chestnut – evokes natural fibres */
+      --color-accent:     #db9595;   /* golden thread */
+      --color-light:      #faf8f5;
+      --color-dark:       #1e1e1e;
+      --color-border:     #ddd;
+      --max-width:        1100px;
+      --spacing-section:  4rem;
+    }
+
+    /* ── SHARED LAYOUT HELPER ────────────────────────────────
+       .container centres content and caps its width.
+       Used by every major section.
+    ───────────────────────────────────────────────────────── */
+    .container {
+      max-width: var(--max-width);
+      margin-inline: auto;
+      padding-inline: 1.5rem;
+    }
+
+    /* ════════════════════════════════════════════════════════
+       HEADER
+       Contains: logo / brand name + main navigation.
+       FUTURE: Replace text logo with <img> SVG/PNG asset.
+       FUTURE: Add a cart icon, language switcher, search bar.
+    ════════════════════════════════════════════════════════ */
+    header {
+      background-color: var(--color-brand);
+      color: #fff;
+      padding: 1rem 0;
+      position: sticky;    /* stays visible while scrolling */
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;     /* graceful wrapping on small screens */
+    }
+
+    .logo {
+      font-size: 1.6rem;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding-bottom: 2px;
+      border-bottom: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    nav a:hover,
+    nav a[aria-current="page"] {
+      border-bottom-color: var(--color-accent);
+    }
+
+    /* ════════════════════════════════════════════════════════
+       HERO SECTION
+       The first impression. Full-width banner with a tagline.
+       FUTURE: Replace solid background with a high-res fabric
+       photograph (<img> or CSS background-image).
+       FUTURE: Add a CTA button that links to /collections.
+       FUTURE: Animate text in with a CSS fade/slide.
+    ════════════════════════════════════════════════════════ */
+    .hero {
+      background-color: #ede8e0;   /* placeholder – swap for photo */
+      background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 8px,
+        rgba(123, 79, 46, 0.05) 8px,
+        rgba(123, 79, 46, 0.05) 9px
+      );                            /* subtle weave texture hint */
+      text-align: center;
+      padding: 6rem 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: var(--color-brand);
+      margin-bottom: 1rem;
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: #555;
+      max-width: 600px;
+      margin-inline: auto;
+      margin-bottom: 2rem;
+    }
+
+    /* FUTURE: style a real <a> or <button> here */
+    .btn-primary {
+      display: inline-block;
+      background-color: var(--color-brand);
+      color: #ffffff;
+      padding: 0.75rem 2rem;
+      border-radius: 2px;
+      text-decoration: none;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent);
+      color: var(--color-dark);
+    }
+
+    /* ════════════════════════════════════════════════════════
+       SECTION SHARED STYLES
+       Every content section uses .section for consistent
+       vertical rhythm.
+    ════════════════════════════════════════════════════════ */
+    .section {
+      padding: var(--spacing-section) 0;
+    }
+
+    .section + .section {
+      border-top: 1px solid var(--color-border);
+    }
+
+    .section-title {
+      font-size: 1.75rem;
+      color: var(--color-brand);
+      margin-bottom: 0.4rem;
+    }
+
+    .section-subtitle {
+      color: #ae4141;
+      margin-bottom: 2rem;
+      font-style: italic;
+    }
+
+    /* ════════════════════════════════════════════════════════
+       COLLECTIONS / PRODUCTS SECTION
+       Displays a grid of fabric collection cards.
+       FUTURE: Render cards from a database / API response.
+       FUTURE: Add filtering by material, colour, usage.
+       FUTURE: Each card links to a dedicated product page.
+    ════════════════════════════════════════════════════════ */
+    .collections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    /* FUTURE: replace .card-image with a real <img> tag */
+    .card-image {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background-color: #e8e2d8;   /* placeholder colour block */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aaa;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .card-body {
+      padding: 1rem;
+    }
+
+    .card-body h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.3rem;
+      color: var(--color-dark);
+    }
+
+    .card-body p {
+      font-size: 0.88rem;
+      color: #666;
+    }
+
+    /* ════════════════════════════════════════════════════════
+       ABOUT US SECTION
+       Two-column layout: text on left, placeholder image right.
+       FUTURE: Pull copy from a CMS.
+       FUTURE: Add a team photo or atelier image on the right.
+    ════════════════════════════════════════════════════════ */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    @media (max-width: 640px) {
+      .about-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .about-image-placeholder {
+      aspect-ratio: 4 / 3;
+      background-color: #e8e2d8;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aaa;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* ════════════════════════════════════════════════════════
+       CONTACT SECTION (minimal teaser – not a full form)
+       FUTURE: Expand into a full <form> with name, email,
+       message fields + server-side validation / CAPTCHA.
+       FUTURE: Integrate with a mailing service (Mailchimp,
+       Brevo, etc.) or a backend endpoint.
+    ════════════════════════════════════════════════════════ */
+    .contact-block {
+      background-color: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      padding: 2rem;
+      max-width: 520px;
+    }
+
+    .contact-block p {
+      margin-bottom: 1rem;
+      color: #555;
+    }
+
+    /* Placeholder form styling */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.3rem;
+      color: #444;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      background: #faf8f5;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--color-brand);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    /* ════════════════════════════════════════════════════════
+       FOOTER
+       FUTURE: Add social links, newsletter signup, sitemap
+       columns, legal links (CGV, mentions légales).
+       FUTURE: Pull copyright year dynamically via JS:
+         document.getElementById('year').textContent =
+         new Date().getFullYear();
+    ════════════════════════════════════════════════════════ */
+    footer {
+      background-color: var(--color-dark);
+      color: #aaa;
+      padding: 2.5rem 0;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-nav {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      list-style: none;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════════
+       HEADER
+       Sticky bar: brand name + navigation links.
+  ══════════════════════════════════════════════════════════ -->
+  <header>
+    <div class="container header-inner">
+
+      <!-- FUTURE: wrap in <a href="/"> once routing is set up -->
+      <span class="logo">Tissus Passion</span>
+
+      <nav aria-label="Navigation principale">
+        <ul>
+          <!-- FUTURE: these items can be generated from a JS
+               array or a backend menu API. aria-current="page"
+               should be set dynamically on the active route. -->
+          <li><a href="Connexion.html">Se Connecter</a></li>
+          <li><a href="Panier.html">Mon Panier</a></li>
+          <li><a href="Horaires.html">Horaires et Localisation</a></li>
+          <li><a href="Contact.html">Contact</a></li>
+        </ul>
+      </nav>
+
+    </div>
+  </header>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       MAIN CONTENT
+       All page sections live inside <main> for accessibility
+       and SEO (landmark element).
+  ══════════════════════════════════════════════════════════ -->
+  <main>
+
+    <!-- ────────────────────────────────────────────────────
+         SECTION 1 – HERO
+         First-impression banner. Replace background with a
+         beautiful fabric photograph. Add a strong CTA.
+    ──────────────────────────────────────────────────────── -->
+    <section class="hero" id="accueil" aria-labelledby="hero-title">
+
+      <!-- FUTURE: swap text logo for an <img> hero image     -->
+      <!-- FUTURE: add a <video> loop of fabric in motion     -->
+
+      <h1 id="hero-title">L'art du tissu à portée de main</h1>
+
+      <p>
+        Découvrez notre sélection de tissus d'exception — cotonnades,
+        soieries, lins et velours — soigneusement choisis pour vos
+        créations et projets de décoration.
+      </p>
+
+      <!-- FUTURE: link to /collections once pages exist      -->
+      <a href="#collections" class="btn-primary">Voir les collections</a>
+
+    </section>
+
+
+    <!-- ────────────────────────────────────────────────────
+         SECTION 2 – COLLECTIONS / PRODUCTS
+         Grid of fabric collection cards.
+         FUTURE: Fetch product data from a REST API or
+         GraphQL endpoint and render cards with a JS template
+         or a framework component (React, Vue, etc.).
+    ──────────────────────────────────────────────────────── -->
+    <section class="section" id="collections" aria-labelledby="collections-title">
+      <div class="container">
+
+        <h2 class="section-title" id="collections-title">Nos Collections</h2>
+        <p class="section-subtitle">Une sélection renouvelée chaque saison</p>
+
+        <div class="collections-grid" id="collections-grid">
+          <!--
+            FUTURE: The cards below are static placeholders.
+            Replace them by dynamically injecting HTML from
+            a product fetch call, e.g.:
+              fetch('/api/collections')
+                .then(r => r.json())
+                .then(products => renderCards(products));
+          -->
+
+          <!-- Card 1 -->
+          <article class="card">
+            <div class="card-image">[ Photo tissu ]</div>
+            <div class="card-body">
+              <h3>Lin Naturel</h3>
+              <p>Tissage artisanal, parfait pour la literie et l'ameublement.</p>
+            </div>
+          </article>
+
+          <!-- Card 2 -->
+          <article class="card">
+            <div class="card-image">[ Photo tissu ]</div>
+            <div class="card-body">
+              <h3>Velours Brodé</h3>
+              <p>Richesse et texture pour vos rideaux et coussins de prestige.</p>
+            </div>
+          </article>
+
+          <!-- Card 3 -->
+          <article class="card">
+            <div class="card-image">[ Photo tissu ]</div>
+            <div class="card-body">
+              <h3>Coton Imprimé</h3>
+              <p>Motifs contemporains pour la mode et la décoration intérieure.</p>
+            </div>
+          </article>
+
+          <!-- Card 4 -->
+          <article class="card">
+            <div class="card-image">[ Photo tissu ]</div>
+            <div class="card-body">
+              <h3>Soie Légère</h3>
+              <p>Fluidité et élégance pour les créations couture haut de gamme.</p>
+            </div>
+          </article>
+
+        </div><!-- /#collections-grid -->
+
+      </div><!-- /.container -->
+    </section>
+
+
+    <!-- ────────────────────────────────────────────────────
+         SECTION 3 – ABOUT US
+         Brand story + atelier image.
+         FUTURE: Load copy from a CMS (Strapi, Contentful…).
+         FUTURE: Add an image carousel of the atelier.
+    ──────────────────────────────────────────────────────── -->
+    <section class="section" id="a-propos" aria-labelledby="about-title">
+      <div class="container">
+
+        <h2 class="section-title" id="about-title">À Propos de Tissus Passion</h2>
+        <p class="section-subtitle">Notre histoire, notre savoir-faire</p>
+
+        <div class="about-grid">
+
+          <div class="about-text">
+            <!-- FUTURE: pull from CMS rich-text field         -->
+            <p>
+              Fondée en 2005, <strong>Tissus Passion</strong> est née d'un amour
+              profond pour les matières et les textures. Nous sourceons nos tissus
+              auprès d'artisans et manufactures sélectionnés en Europe et en Asie,
+              garantissant qualité et traçabilité à chaque mètre vendu.
+            </p>
+            <br />
+            <p>
+              Notre boutique accueille couturières, décorateurs d'intérieur et
+              amateurs éclairés qui cherchent des matières difficiles à trouver
+              ailleurs. Chaque collection reflète les tendances de saison tout en
+              respectant des critères exigeants de durabilité.
+            </p>
+            <br />
+            <!-- FUTURE: link to a full /a-propos page         -->
+            <a href="#contact" class="btn-primary">Nous contacter</a>
+          </div>
+
+          <div class="about-image-placeholder" role="img"
+               aria-label="Photo de l'atelier Tissus Passion">
+            [ Photo atelier ]
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ────────────────────────────────────────────────────
+         SECTION 4 – CONTACT
+         Simple contact form scaffold.
+         FUTURE: Wire <form> to a backend endpoint or
+         serverless function (e.g. POST /api/contact).
+         FUTURE: Add real-time validation with JS.
+         FUTURE: Add CAPTCHA (hCaptcha / Turnstile).
+    ──────────────────────────────────────────────────────── -->
+    <section class="section" id="contact" aria-labelledby="contact-title">
+      <div class="container">
+
+        <h2 class="section-title" id="contact-title">Contact</h2>
+        <p class="section-subtitle">Une question ? Écrivez-nous.</p>
+
+        <div class="contact-block">
+          <p>
+            Remplissez le formulaire ci-dessous et nous vous répondrons dans
+            les 24 heures ouvrées.
+          </p>
+
+          <!--
+            FUTURE: add action="/api/contact" method="POST"
+            once the backend endpoint is ready.
+            Add novalidate and handle validation in JS.
+          -->
+          <form id="contact-form">
+
+            <div class="form-group">
+              <label for="name">Nom complet</label>
+              <input type="text" id="name" name="name"
+                     placeholder="Marie Dupont" autocomplete="name" required />
+            </div>
+
+            <div class="form-group">
+              <label for="email">Adresse e-mail</label>
+              <input type="email" id="email" name="email"
+                     placeholder="marie@exemple.fr" autocomplete="email" required />
+            </div>
+
+            <div class="form-group">
+              <label for="message">Message</label>
+              <textarea id="message" name="message"
+                        placeholder="Votre message…" required></textarea>
+            </div>
+
+            <!-- FUTURE: disable button & show spinner while   -->
+            <!-- awaiting server response                      -->
+            <button type="submit" class="btn-primary">Envoyer</button>
+
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+  </main><!-- /main -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       FOOTER
+       FUTURE: Split into columns: logo, nav, socials, legal.
+       FUTURE: Add newsletter signup input.
+       FUTURE: Inject dynamic year with JS (see comment below).
+  ══════════════════════════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+
+      <ul class="footer-nav" aria-label="Liens pied de page">
+        <li><a href="#accueil">Accueil</a></li>
+        <li><a href="#collections">Collections</a></li>
+        <li><a href="#a-propos">À Propos</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <!-- FUTURE: <li><a href="/mentions-legales">Mentions légales</a></li> -->
+        <!-- FUTURE: <li><a href="/cgv">CGV</a></li>                           -->
+      </ul>
+
+      <!-- FUTURE: replace hard-coded year with:
+           <span id="year"></span>
+           and in JS: document.getElementById('year')
+                        .textContent = new Date().getFullYear();
+      -->
+      <p>&copy; 2025 Tissus Passion. Tous droits réservés.</p>
+
+    </div>
+  </footer>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       JAVASCRIPT — SCAFFOLD
+       Keep scripts at the bottom for performance.
+       FUTURE: Replace inline <script> with <script type="module"
+               src="main.js"> once the project uses a bundler
+               (Vite, Webpack, Parcel…).
+  ══════════════════════════════════════════════════════════ -->
+  <script>
+    /* ── Dynamic copyright year ─────────────────────────── */
+    // Uncomment when you're ready to use it:
+    // document.querySelector('footer p').innerHTML =
+    //   `&copy; ${new Date().getFullYear()} Tissus Passion. Tous droits réservés.`;
+
+    /* ── Contact form – placeholder handler ─────────────── */
+    // FUTURE: replace with a real fetch() call to your API.
+    const contactForm = document.getElementById('contact-form');
+    if (contactForm) {
+      contactForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        // TODO: collect form data with new FormData(this),
+        //       send via fetch('/api/contact', { method:'POST', body: formData }),
+        //       then show a success / error message to the user.
+        alert('Formulaire soumis ! (intégration backend à venir)');
+      });
+    }
+  </script>
+
+</body>
+</html>
