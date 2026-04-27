@@ -1,639 +1,446 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tissus - Passion</title>
-  <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tissus Passion — Votre spécialiste en tissus d'ameublement depuis 1998. Découvrez notre collection de velours, lin, soie et bien plus.">
+    <title>Tissus Passion — L'art de l'ameublement textile</title>
 
-    body {
-      font-family: Georgia, serif;   /* FUTURE: swap for branded web font */
-      font-size: 16px;
-      line-height: 1.6;
-      color: #2c2c2c;
-      background-color: #faf8f5;     /* warm off-white – feels fabric-like */
-    }
+    <!-- Polices Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    /* ── CSS CUSTOM PROPERTIES (design tokens) ───────────────
-       Define colours, spacing, etc. once here so changing the
-       brand palette later is a single-file edit.
-    ───────────────────────────────────────────────────────── */
-    :root {
-      --color-brand:      #c34147;   /* warm chestnut – evokes natural fibres */
-      --color-accent:     #db9595;   /* golden thread */
-      --color-light:      #faf8f5;
-      --color-dark:       #1e1e1e;
-      --color-border:     #ddd;
-      --max-width:        1100px;
-      --spacing-section:  4rem;
-    }
-
-    /* ── SHARED LAYOUT HELPER ────────────────────────────────
-       .container centres content and caps its width.
-       Used by every major section.
-    ───────────────────────────────────────────────────────── */
-    .container {
-      max-width: var(--max-width);
-      margin-inline: auto;
-      padding-inline: 1.5rem;
-    }
-
-    /* ════════════════════════════════════════════════════════
-       HEADER
-       Contains: logo / brand name + main navigation.
-       FUTURE: Replace text logo with <img> SVG/PNG asset.
-       FUTURE: Add a cart icon, language switcher, search bar.
-    ════════════════════════════════════════════════════════ */
-    header {
-      background-color: var(--color-brand);
-      color: #fff;
-      padding: 1rem 0;
-      position: sticky;    /* stays visible while scrolling */
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;     /* graceful wrapping on small screens */
-    }
-
-    .logo {
-      font-size: 1.6rem;
-      font-weight: bold;
-      letter-spacing: 0.04em;
-      text-decoration: none;
-      color: inherit;
-    }
-
-    
-    nav ul {
-      list-style: none;
-      display: flex;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    nav a {
-      color: #fff;
-      text-decoration: none;
-      font-size: 0.95rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding-bottom: 2px;
-      border-bottom: 2px solid transparent;
-      transition: border-color 0.2s;
-    }
-
-    nav a:hover,
-    nav a[aria-current="page"] {
-      border-bottom-color: var(--color-accent);
-    }
-
-    /* ════════════════════════════════════════════════════════
-       HERO SECTION
-       The first impression. Full-width banner with a tagline.
-       FUTURE: Replace solid background with a high-res fabric
-       photograph (<img> or CSS background-image).
-       FUTURE: Add a CTA button that links to /collections.
-       FUTURE: Animate text in with a CSS fade/slide.
-    ════════════════════════════════════════════════════════ */
-    .hero {
-      background-color: #ede8e0;   /* placeholder – swap for photo */
-      background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 8px,
-        rgba(123, 79, 46, 0.05) 8px,
-        rgba(123, 79, 46, 0.05) 9px
-      );                            /* subtle weave texture hint */
-      text-align: center;
-      padding: 6rem 1.5rem;
-    }
-
-    .hero h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      color: var(--color-brand);
-      margin-bottom: 1rem;
-    }
-
-    .hero p {
-      font-size: clamp(1rem, 2.5vw, 1.25rem);
-      color: #555;
-      max-width: 600px;
-      margin-inline: auto;
-      margin-bottom: 2rem;
-    }
-
-    /* FUTURE: style a real <a> or <button> here */
-    .btn-primary {
-      display: inline-block;
-      background-color: var(--color-brand);
-      color: #ffffff;
-      padding: 0.75rem 2rem;
-      border-radius: 2px;
-      text-decoration: none;
-      font-size: 0.95rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      transition: background-color 0.2s;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--color-accent);
-      color: var(--color-dark);
-    }
-
-    /* ════════════════════════════════════════════════════════
-       SECTION SHARED STYLES
-       Every content section uses .section for consistent
-       vertical rhythm.
-    ════════════════════════════════════════════════════════ */
-    .section {
-      padding: var(--spacing-section) 0;
-    }
-
-    .section + .section {
-      border-top: 1px solid var(--color-border);
-    }
-
-    .section-title {
-      font-size: 1.75rem;
-      color: var(--color-brand);
-      margin-bottom: 0.4rem;
-    }
-
-    .section-subtitle {
-      color: #ae4141;
-      margin-bottom: 2rem;
-      font-style: italic;
-    }
-
-    /* ════════════════════════════════════════════════════════
-       COLLECTIONS / PRODUCTS SECTION
-       Displays a grid of fabric collection cards.
-       FUTURE: Render cards from a database / API response.
-       FUTURE: Add filtering by material, colour, usage.
-       FUTURE: Each card links to a dedicated product page.
-    ════════════════════════════════════════════════════════ */
-    .collections-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .card {
-      background: #fff;
-      border: 1px solid var(--color-border);
-      border-radius: 4px;
-      overflow: hidden;
-      transition: box-shadow 0.2s;
-    }
-
-    .card:hover {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    /* FUTURE: replace .card-image with a real <img> tag */
-    .card-image {
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      background-color: #e8e2d8;   /* placeholder colour block */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #aaa;
-      font-size: 0.8rem;
-      letter-spacing: 0.05em;
-    }
-
-    .card-body {
-      padding: 1rem;
-    }
-
-    .card-body h3 {
-      font-size: 1.05rem;
-      margin-bottom: 0.3rem;
-      color: var(--color-dark);
-    }
-
-    .card-body p {
-      font-size: 0.88rem;
-      color: #666;
-    }
-
-    /* ════════════════════════════════════════════════════════
-       ABOUT US SECTION
-       Two-column layout: text on left, placeholder image right.
-       FUTURE: Pull copy from a CMS.
-       FUTURE: Add a team photo or atelier image on the right.
-    ════════════════════════════════════════════════════════ */
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: center;
-    }
-
-    @media (max-width: 640px) {
-      .about-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .about-image-placeholder {
-      aspect-ratio: 4 / 3;
-      background-color: #e8e2d8;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #aaa;
-      font-size: 0.8rem;
-      letter-spacing: 0.05em;
-    }
-
-    /* ════════════════════════════════════════════════════════
-       CONTACT SECTION (minimal teaser – not a full form)
-       FUTURE: Expand into a full <form> with name, email,
-       message fields + server-side validation / CAPTCHA.
-       FUTURE: Integrate with a mailing service (Mailchimp,
-       Brevo, etc.) or a backend endpoint.
-    ════════════════════════════════════════════════════════ */
-    .contact-block {
-      background-color: #fff;
-      border: 1px solid var(--color-border);
-      border-radius: 4px;
-      padding: 2rem;
-      max-width: 520px;
-    }
-
-    .contact-block p {
-      margin-bottom: 1rem;
-      color: #555;
-    }
-
-    /* Placeholder form styling */
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      margin-bottom: 0.3rem;
-      color: #444;
-    }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 0.6rem 0.75rem;
-      border: 1px solid var(--color-border);
-      border-radius: 3px;
-      font-family: inherit;
-      font-size: 0.95rem;
-      background: #faf8f5;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--color-brand);
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    /* ════════════════════════════════════════════════════════
-       FOOTER
-       FUTURE: Add social links, newsletter signup, sitemap
-       columns, legal links (CGV, mentions légales).
-       FUTURE: Pull copyright year dynamically via JS:
-         document.getElementById('year').textContent =
-         new Date().getFullYear();
-    ════════════════════════════════════════════════════════ */
-    footer {
-      background-color: var(--color-dark);
-      color: #aaa;
-      padding: 2.5rem 0;
-      text-align: center;
-      font-size: 0.85rem;
-    }
-
-    footer a {
-      color: var(--color-accent);
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    .footer-nav {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      list-style: none;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-  </style>
+    <!-- Feuille de style principale -->
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-  <!-- ══════════════════════════════════════════════════════
-       HEADER
-       Sticky bar: brand name + navigation links.
-  ══════════════════════════════════════════════════════════ -->
-  <header>
-    <div class="container header-inner">
+<!-- ── NAVIGATION ──────────────────────────────────────────── -->
+<nav class="navbar">
+    <a href="index.php" class="nav-logo">
+        Tissus <span>Passion</span> 
+    </a>
 
-      <!-- FUTURE: wrap in <a href="/"> once routing is set up -->
-      <span class="logo">Tissus Passion</span>
-
-      <nav aria-label="Navigation principale">
-        <ul>
-          <!-- FUTURE: these items can be generated from a JS
-               array or a backend menu API. aria-current="page"
-               should be set dynamically on the active route. -->
-          <li><a href="Connexion.html">Se Connecter</a></li>
-          <li><a href="Panier.html">Mon Panier</a></li>
-          <li><a href="Horaires.html">Horaires et Localisation</a></li>
-          <li><a href="Contact.html">Contact</a></li>
-        </ul>
-      </nav>
-
-    </div>
-  </header>
-
-
-  <!-- ══════════════════════════════════════════════════════
-       MAIN CONTENT
-       All page sections live inside <main> for accessibility
-       and SEO (landmark element).
-  ══════════════════════════════════════════════════════════ -->
-  <main>
-
-    <!-- ────────────────────────────────────────────────────
-         SECTION 1 – HERO
-         First-impression banner. Replace background with a
-         beautiful fabric photograph. Add a strong CTA.
-    ──────────────────────────────────────────────────────── -->
-    <section class="hero" id="accueil" aria-labelledby="hero-title">
-
-      <!-- FUTURE: swap text logo for an <img> hero image     -->
-      <!-- FUTURE: add a <video> loop of fabric in motion     -->
-
-      <h1 id="hero-title">L'art du tissu à portée de main</h1>
-
-      <p>
-        Découvrez notre sélection de tissus d'exception — cotonnades,
-        soieries, lins et velours — soigneusement choisis pour vos
-        créations et projets de décoration.
-      </p>
-
-      <!-- FUTURE: link to /collections once pages exist      -->
-      <a href="#collections" class="btn-primary">Voir les collections</a>
-
-    </section>
-
-
-    <!-- ────────────────────────────────────────────────────
-         SECTION 2 – COLLECTIONS / PRODUCTS
-         Grid of fabric collection cards.
-         FUTURE: Fetch product data from a REST API or
-         GraphQL endpoint and render cards with a JS template
-         or a framework component (React, Vue, etc.).
-    ──────────────────────────────────────────────────────── -->
-    <section class="section" id="collections" aria-labelledby="collections-title">
-      <div class="container">
-
-        <h2 class="section-title" id="collections-title">Nos Collections</h2>
-        <p class="section-subtitle">Une sélection renouvelée chaque saison</p>
-
-        <div class="collections-grid" id="collections-grid">
-          <!--
-            FUTURE: The cards below are static placeholders.
-            Replace them by dynamically injecting HTML from
-            a product fetch call, e.g.:
-              fetch('/api/collections')
-                .then(r => r.json())
-                .then(products => renderCards(products));
-          -->
-
-          <!-- Card 1 -->
-          <article class="card">
-            <div class="card-image">[ Photo tissu ]</div>
-            <div class="card-body">
-              <h3>Lin Naturel</h3>
-              <p>Tissage artisanal, parfait pour la literie et l'ameublement.</p>
-            </div>
-          </article>
-
-          <!-- Card 2 -->
-          <article class="card">
-            <div class="card-image">[ Photo tissu ]</div>
-            <div class="card-body">
-              <h3>Velours Brodé</h3>
-              <p>Richesse et texture pour vos rideaux et coussins de prestige.</p>
-            </div>
-          </article>
-
-          <!-- Card 3 -->
-          <article class="card">
-            <div class="card-image">[ Photo tissu ]</div>
-            <div class="card-body">
-              <h3>Coton Imprimé</h3>
-              <p>Motifs contemporains pour la mode et la décoration intérieure.</p>
-            </div>
-          </article>
-
-          <!-- Card 4 -->
-          <article class="card">
-            <div class="card-image">[ Photo tissu ]</div>
-            <div class="card-body">
-              <h3>Soie Légère</h3>
-              <p>Fluidité et élégance pour les créations couture haut de gamme.</p>
-            </div>
-          </article>
-
-        </div><!-- /#collections-grid -->
-
-      </div><!-- /.container -->
-    </section>
-
-
-    <!-- ────────────────────────────────────────────────────
-         SECTION 3 – ABOUT US
-         Brand story + atelier image.
-         FUTURE: Load copy from a CMS (Strapi, Contentful…).
-         FUTURE: Add an image carousel of the atelier.
-    ──────────────────────────────────────────────────────── -->
-    <section class="section" id="a-propos" aria-labelledby="about-title">
-      <div class="container">
-
-        <h2 class="section-title" id="about-title">À Propos de Tissus Passion</h2>
-        <p class="section-subtitle">Notre histoire, notre savoir-faire</p>
-
-        <div class="about-grid">
-
-          <div class="about-text">
-            <!-- FUTURE: pull from CMS rich-text field         -->
-            <p>
-              Fondée en 2005, <strong>Tissus Passion</strong> est née d'un amour
-              profond pour les matières et les textures. Nous sourceons nos tissus
-              auprès d'artisans et manufactures sélectionnés en Europe et en Asie,
-              garantissant qualité et traçabilité à chaque mètre vendu.
-            </p>
-            <br />
-            <p>
-              Notre boutique accueille couturières, décorateurs d'intérieur et
-              amateurs éclairés qui cherchent des matières difficiles à trouver
-              ailleurs. Chaque collection reflète les tendances de saison tout en
-              respectant des critères exigeants de durabilité.
-            </p>
-            <br />
-            <!-- FUTURE: link to a full /a-propos page         -->
-            <a href="#contact" class="btn-primary">Nous contacter</a>
-          </div>
-
-          <div class="about-image-placeholder" role="img"
-               aria-label="Photo de l'atelier Tissus Passion">
-            [ Photo atelier ]
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-
-    <!-- ────────────────────────────────────────────────────
-         SECTION 4 – CONTACT
-         Simple contact form scaffold.
-         FUTURE: Wire <form> to a backend endpoint or
-         serverless function (e.g. POST /api/contact).
-         FUTURE: Add real-time validation with JS.
-         FUTURE: Add CAPTCHA (hCaptcha / Turnstile).
-    ──────────────────────────────────────────────────────── -->
-    <section class="section" id="contact" aria-labelledby="contact-title">
-      <div class="container">
-
-        <h2 class="section-title" id="contact-title">Contact</h2>
-        <p class="section-subtitle">Une question ? Écrivez-nous.</p>
-
-        <div class="contact-block">
-          <p>
-            Remplissez le formulaire ci-dessous et nous vous répondrons dans
-            les 24 heures ouvrées.
-          </p>
-
-          <!--
-            FUTURE: add action="/api/contact" method="POST"
-            once the backend endpoint is ready.
-            Add novalidate and handle validation in JS.
-          -->
-          <form id="contact-form">
-
-            <div class="form-group">
-              <label for="name">Nom complet</label>
-              <input type="text" id="name" name="name"
-                     placeholder="Marie Dupont" autocomplete="name" required />
-            </div>
-
-            <div class="form-group">
-              <label for="email">Adresse e-mail</label>
-              <input type="email" id="email" name="email"
-                     placeholder="marie@exemple.fr" autocomplete="email" required />
-            </div>
-
-            <div class="form-group">
-              <label for="message">Message</label>
-              <textarea id="message" name="message"
-                        placeholder="Votre message…" required></textarea>
-            </div>
-
-            <!-- FUTURE: disable button & show spinner while   -->
-            <!-- awaiting server response                      -->
-            <button type="submit" class="btn-primary">Envoyer</button>
-
-          </form>
-        </div>
-
-      </div>
-    </section>
-
-  </main><!-- /main -->
-
-
-  <!-- ══════════════════════════════════════════════════════
-       FOOTER
-       FUTURE: Split into columns: logo, nav, socials, legal.
-       FUTURE: Add newsletter signup input.
-       FUTURE: Inject dynamic year with JS (see comment below).
-  ══════════════════════════════════════════════════════════ -->
-  <footer>
-    <div class="container">
-
-      <ul class="footer-nav" aria-label="Liens pied de page">
+    <ul class="nav-links" id="navLinks">
         <li><a href="#accueil">Accueil</a></li>
-        <li><a href="#collections">Collections</a></li>
-        <li><a href="#a-propos">À Propos</a></li>
-        <li><a href="#contact">Contact</a></li>
-        <!-- FUTURE: <li><a href="/mentions-legales">Mentions légales</a></li> -->
-        <!-- FUTURE: <li><a href="/cgv">CGV</a></li>                           -->
-      </ul>
+        <li><a href="#catalogue">Catalogue</a></li>
+        <li><a href="#horaires">Horaires</a></li>
+        <li><a href="#lieu">Lieu</a></li>
+        <li><a href="auth.php">Connexion</a></li>
+    </ul>
 
-      <!-- FUTURE: replace hard-coded year with:
-           <span id="year"></span>
-           and in JS: document.getElementById('year')
-                        .textContent = new Date().getFullYear();
-      -->
-      <p>&copy; 2025 Tissus Passion. Tous droits réservés.</p>
+    <div style="display:flex; align-items:center; gap:1rem;">
+        <!-- Icône panier -->
+        <div class="nav-cart" title="Mon panier" onclick="scrollToCart()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            <span class="cart-badge">3</span>
+        </div>
 
+        <!-- Bouton menu mobile -->
+        <button class="nav-toggle" id="navToggle" aria-label="Menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
     </div>
-  </footer>
+</nav>
 
+<!-- ── HERO ────────────────────────────────────────────────── -->
+<section class="hero" id="accueil">
+    <div class="hero-bg"></div>
+    <div class="hero-pattern"></div>
 
-  <!-- ══════════════════════════════════════════════════════
-       JAVASCRIPT — SCAFFOLD
-       Keep scripts at the bottom for performance.
-       FUTURE: Replace inline <script> with <script type="module"
-               src="main.js"> once the project uses a bundler
-               (Vite, Webpack, Parcel…).
-  ══════════════════════════════════════════════════════════ -->
-  <script>
-    /* ── Dynamic copyright year ─────────────────────────── */
-    // Uncomment when you're ready to use it:
-    // document.querySelector('footer p').innerHTML =
-    //   `&copy; ${new Date().getFullYear()} Tissus Passion. Tous droits réservés.`;
+    <div class="hero-container">
+        <!-- Texte hero -->
+        <div class="hero-text">
+            <p class="hero-eyebrow anim-fade-up">Artisans du tissu depuis 1998</p>
 
-    /* ── Contact form – placeholder handler ─────────────── */
-    // FUTURE: replace with a real fetch() call to your API.
-    const contactForm = document.getElementById('contact-form');
-    if (contactForm) {
-      contactForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        // TODO: collect form data with new FormData(this),
-        //       send via fetch('/api/contact', { method:'POST', body: formData }),
-        //       then show a success / error message to the user.
-        alert('Formulaire soumis ! (intégration backend à venir)');
-      });
-    }
-  </script>
+            <h1 class="anim-fade-up anim-delay-1">
+                L'art de donner <em>vie</em><br>
+                à vos intérieurs
+            </h1>
 
+            <p class="hero-desc anim-fade-up anim-delay-2">
+                Velours, lin, soie, jacquard… Explorez notre collection
+                de tissus d'ameublement sélectionnés avec soin pour
+                sublimer chaque pièce de votre maison.
+            </p>
+
+            <div class="hero-actions anim-fade-up anim-delay-3">
+                <a href="#catalogue" class="btn-primary">
+                    <span>Découvrir nos tissus</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </a>
+                <a href="#lieu" class="btn-secondary">Nous trouver</a>
+            </div>
+        </div>
+
+        <!-- Visuel empilé -->
+        <div class="hero-visual anim-fade-up anim-delay-4">
+            <div class="hero-card-stack">
+                <div class="fabric-card"></div>
+                <div class="fabric-card"></div>
+                <div class="fabric-card"></div>
+
+                <div class="hero-stats">
+                    <p>Références disponibles</p>
+                    <strong>+100
+                    </strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── CATALOGUE / PANIER ───────────────────────────────────── -->
+<section class="section cart-section" id="catalogue">
+    <div class="container">
+        <div class="section-label">Votre sélection</div>
+        <div class="section-title">Mon <em>panier</em></div>
+        <p class="section-subtitle">Retrouvez les articles que vous avez ajoutés à votre sélection et finalisez votre commande.</p>
+
+        <div class="cart-grid">
+            <!-- Aperçu panier -->
+            <div class="cart-preview">
+                <!-- Article 1 -->
+                <div class="cart-item">
+                    <div class="cart-swatch" style="background: linear-gradient(135deg, #D4956A, #8B5030);"></div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">Velours Terracotta</div>
+                        <div class="cart-item-detail">Ref. VLT-044 · 2,5 m</div>
+                    </div>
+                    <div class="cart-item-price">54,90 €</div>
+                </div>
+
+                <!-- Article 2 -->
+                <div class="cart-item">
+                    <div class="cart-swatch" style="background: linear-gradient(135deg, #8FAE88, #4A6B42);"></div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">Lin Vert Sauge</div>
+                        <div class="cart-item-detail">Ref. LIN-012 · 3 m</div>
+                    </div>
+                    <div class="cart-item-price">47,20 €</div>
+                </div>
+
+                <!-- Article 3 -->
+                <div class="cart-item">
+                    <div class="cart-swatch" style="background: linear-gradient(135deg, #C9B89A, #8A7048);"></div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">Jacquard Beige Doré</div>
+                        <div class="cart-item-detail">Ref. JAC-078 · 1,8 m</div>
+                    </div>
+                    <div class="cart-item-price">63,40 €</div>
+                </div>
+
+                <!-- Total -->
+                <div class="cart-total">
+                    <div class="cart-total-label">Total estimé</div>
+                    <div class="cart-total-amount">165,50 €</div>
+                </div>
+            </div>
+
+            <!-- Avantages -->
+            <div>
+                <div class="cart-actions-list">
+                    <div class="cart-feature">
+                        <div class="cart-feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                                <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                        </div>
+                        <div class="cart-feature-text">
+                            <h4>Livraison offerte dès 80 €</h4>
+                            <p>Expédition en 3 à 5 jours ouvrés en France métropolitaine.</p>
+                        </div>
+                    </div>
+
+                    <div class="cart-feature">
+                        <div class="cart-feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </div>
+                        <div class="cart-feature-text">
+                            <h4>Échantillons gratuits</h4>
+                            <p>Commandez jusqu'à 5 échantillons pour tester la matière chez vous.</p>
+                        </div>
+                    </div>
+
+                    <div class="cart-feature">
+                        <div class="cart-feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </div>
+                        <div class="cart-feature-text">
+                            <h4>Paiement sécurisé</h4>
+                            <p>Vos transactions sont chiffrées et protégées par SSL.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="auth.php" class="btn-cart">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Valider ma commande
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── HORAIRES ─────────────────────────────────────────────── -->
+<section class="section section-alt" id="horaires">
+    <div class="container">
+        <div class="section-label">Organisation</div>
+        <h2 class="section-title">Nos <em>horaires</em> d'ouverture</h2>
+        <p class="section-subtitle">La boutique vous accueille toute la semaine pour vous guider dans vos choix de tissus.</p>
+
+        <div class="horaires-grid">
+            <!-- Tableau des horaires -->
+            <div class="horaires-table">
+                <?php
+                /* Détermine le jour actuel (0=dimanche, 1=lundi…) */
+                $jourSemaine = (int) date('N'); // 1=lundi, 7=dimanche
+
+                $horaires = [
+                    1 => ['Lundi',    '09h00 – 18h00', true],
+                    2 => ['Mardi',    '09h00 – 18h00', true],
+                    3 => ['Mercredi', '09h00 – 18h00', true],
+                    4 => ['Jeudi',    '09h00 – 18h00', true],
+                    5 => ['Vendredi', '09h00 – 18h00', true],
+                    6 => ['Samedi',   '09h00 – 17h00', true],
+                    7 => ['Dimanche', 'Fermé',          false],
+                ];
+
+                foreach ($horaires as $num => [$jour, $heure, $ouvert]) :
+                    $isToday = ($num === $jourSemaine);
+                ?>
+                <div class="horaire-row <?= $isToday ? 'today' : '' ?>">
+                    <span class="horaire-day"><?= $jour ?><?= $isToday ? ' <small style="font-size:0.7rem;color:var(--terra);">— Aujourd\'hui</small>' : '' ?></span>
+                    <span class="horaire-time"><?= $heure ?></span>
+                    <span class="horaire-badge <?= $ouvert ? 'badge-open' : 'badge-closed' ?>">
+                        <?= $ouvert ? 'Ouvert' : 'Fermé' ?>
+                    </span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Informations pratiques -->
+            <div class="horaires-info">
+                <div class="info-card">
+                    <div class="info-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18a2 2 0 0 1 1.99-2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Réservation & Conseils</h4>
+                        <p>Prenez rendez-vous pour un accompagnement personnalisé avec nos experts tissu. Appel ou message bienvenu.</p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Fermetures exceptionnelles</h4>
+                        <p>La boutique peut être fermée lors des jours fériés. Consultez notre page ou appelez-nous avant de vous déplacer.</p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Accueil professionnel</h4>
+                        <p>Décorateurs, architectes, hôteliers : un espace dédié vous est réservé sur rendez-vous le matin.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── LIEU / CARTE ─────────────────────────────────────────── -->
+<section class="section" id="lieu">
+    <div class="container">
+        <div class="section-label">Nous rendre visite</div>
+        <h2 class="section-title">Où nous <em>trouver</em></h2>
+        <p class="section-subtitle">Notre boutique est installée au cœur de la ville, facilement accessible en transports.</p>
+
+        <div class="lieu-grid">
+            <!-- Infos adresse -->
+            <div class="lieu-info">
+                <div class="lieu-address">
+                    <h3>Tissus Passion</h3>
+
+                    <div class="lieu-detail">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <div>
+                            <strong>Adresse</strong>
+                            71 Rue De Charleroi,<br>
+                            Nouméa 98800, New Caledonia
+                        </div>
+                    </div>
+
+                    <div class="lieu-detail">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <div>
+                            <strong>Téléphone</strong>
+                            +687 76.85.84
+                        </div>
+                    </div>
+
+                    <div class="lieu-detail">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <div>
+                            <strong>Email</strong>
+                            tissuspassions@hotmail.com
+                        </div>
+                    </div>
+
+                    <div class="lieu-detail">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <div>
+                            <strong>Payement</strong>
+                            CB, Visa, Mastercard, PayPal
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lien vers Google Maps -->
+                <a href="https://www.google.com/maps/place/Tissus+Passions/@-22.2764408,166.4593076,17.89z/data=!4m6!3m5!1s0x6c28098a6d831e5d:0xe81dbf1597dd63e0!8m2!3d-22.2764957!4d166.460672!16s%2Fg%2F11wtwrhvr7?entry=ttu&g_ep=EgoyMDI2MDQyMi4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener" class="btn-primary" style="justify-content:center;">
+                    <span>Ouvrir dans Google Maps</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Carte intégrée -->
+            <div class="map-container">
+                <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2625.0!2d2.3808!3d48.8555!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDjCsDUxJzE5LjgiTiAywrAyMicxOC44IkU!5e0!3m2!1sfr!2sfr!4v1620000000000!5m2!1sfr!2sfr"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    title="Localisation de Tissus Passion">
+                </iframe>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── FOOTER ───────────────────────────────────────────────── -->
+<footer class="footer">
+    <div class="footer-grid">
+        <!-- Colonne marque -->
+        <div>
+            <div class="footer-brand">Tissus <span>Passion</span></div>
+            <p class="footer-desc">
+                Votre spécialiste en tissus d'ameublement depuis 1998. Qualité artisanale, conseil personnalisé et large choix de matières pour sublimer vos intérieurs.
+            </p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="footer-col">
+            <h4>Navigation</h4>
+            <ul>
+                <li><a href="#accueil">Accueil</a></li>
+                <li><a href="#catalogue">Catalogue</a></li>
+                <li><a href="#horaires">Horaires</a></li>
+                <li><a href="#lieu">Lieu</a></li>
+                <li><a href="auth.php">Mon compte</a></li>
+            </ul>
+        </div>
+
+        <!-- Catalogue -->
+        <div class="footer-col">
+            <h4>Matières</h4>
+            <ul>
+                <li><a href="#">Velours</a></li>
+                <li><a href="#">Lin naturel</a></li>
+                <li><a href="#">Jacquard</a></li>
+                <li><a href="#">Soie</a></li>
+                <li><a href="#">Microfibre</a></li>
+            </ul>
+        </div>
+
+        <!-- Contact -->
+        <div class="footer-col">
+            <h4>Contact</h4>
+            <div class="footer-contact">
+                <span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    12 Rue des Artisans, Paris
+                </span>
+                <span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    +33 1 23 45 67 89
+                </span>
+                <span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    contact@tissus-passion.fr
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pied de footer -->
+    <div class="footer-bottom">
+        <span>© Tissus Passion 2025 — Tous droits réservés</span>
+        <div style="display:flex; gap:1.5rem;">
+            <a href="#">Mentions légales</a>
+            <a href="#">Politique de confidentialité</a>
+            <a href="#">CGV</a>
+        </div>
+    </div>
+</footer>
+
+<!-- ── JS ───────────────────────────────────────────────────── -->
+<script src="js/main.js"></script>
 </body>
 </html>
