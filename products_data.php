@@ -2,6 +2,8 @@
 /* ============================================================
    TISSUS PASSION — Données du catalogue produits
    Tableau de 9 tissus vendus au mètre en XPF
+   Les images sont à placer dans le dossier img/ à la racine.
+   Format recommandé : JPG ou WebP, ratio 4:3, min 600×450 px.
    ============================================================ */
 
 $PRODUCTS = [
@@ -11,8 +13,8 @@ $PRODUCTS = [
         'description' => 'Motifs floraux tropicaux aux couleurs vives. Idéal pour coussins, rideaux et nappes. Doux au toucher, facile d\'entretien.',
         'prix'        => 1200,
         'categorie'   => 'Coton',
-        'couleur'     => 'linear-gradient(135deg, #E8A87C, #C0784A)',
-        'emoji'       => '🌺',
+        'couleur'     => 'linear-gradient(135deg, #E8A87C, #C0784A)', // fallback si image absente
+        'image'       => 'img/coton_floral.jpg',
     ],
     [
         'id'          => 2,
@@ -21,7 +23,7 @@ $PRODUCTS = [
         'prix'        => 3800,
         'categorie'   => 'Velours',
         'couleur'     => 'linear-gradient(135deg, #D4956A, #8B5030)',
-        'emoji'       => '🧡',
+        'image'       => 'img/velours-terracotta.jpg',
     ],
     [
         'id'          => 3,
@@ -30,7 +32,7 @@ $PRODUCTS = [
         'prix'        => 1800,
         'categorie'   => 'Lin',
         'couleur'     => 'linear-gradient(135deg, #D9CBAD, #A89268)',
-        'emoji'       => '🌾',
+        'image'       => 'img/lin-naturel-ecru.jpg',
     ],
     [
         'id'          => 4,
@@ -39,7 +41,7 @@ $PRODUCTS = [
         'prix'        => 950,
         'categorie'   => 'Traditionnel',
         'couleur'     => 'linear-gradient(135deg, #6EC6CA, #2A8A8E)',
-        'emoji'       => '🌊',
+        'image'       => 'img/tissu-pareo-tahitien.jpg',
     ],
     [
         'id'          => 5,
@@ -48,7 +50,7 @@ $PRODUCTS = [
         'prix'        => 4500,
         'categorie'   => 'Jacquard',
         'couleur'     => 'linear-gradient(135deg, #C9B89A, #8A7048)',
-        'emoji'       => '✨',
+        'image'       => 'img/jacquard-prestige-dore.jpg',
     ],
     [
         'id'          => 6,
@@ -57,7 +59,7 @@ $PRODUCTS = [
         'prix'        => 2200,
         'categorie'   => 'Synthétique',
         'couleur'     => 'linear-gradient(135deg, #6B7280, #374151)',
-        'emoji'       => '🌑',
+        'image'       => 'img/microfibre-anthracite.jpg',
     ],
     [
         'id'          => 7,
@@ -66,7 +68,7 @@ $PRODUCTS = [
         'prix'        => 4200,
         'categorie'   => 'Soie',
         'couleur'     => 'linear-gradient(135deg, #F5ECD7, #D4C5A0)',
-        'emoji'       => '🕊️',
+        'image'       => 'img/soie-sauvage-ivoire.jpg',
     ],
     [
         'id'          => 8,
@@ -75,7 +77,7 @@ $PRODUCTS = [
         'prix'        => 1400,
         'categorie'   => 'Coton',
         'couleur'     => 'linear-gradient(135deg, #8FAE88, #4A6B42)',
-        'emoji'       => '🌿',
+        'image'       => 'img/coton-popeline-vert-sauge.jpg',
     ],
     [
         'id'          => 9,
@@ -84,6 +86,6 @@ $PRODUCTS = [
         'prix'        => 2600,
         'categorie'   => 'Coton',
         'couleur'     => 'linear-gradient(135deg, #FFFFFF, #E8DDD0)',
-        'emoji'       => '🌸',
+        'image'       => 'img/broderie-anglaise-blanche.jpg',
     ],
 ];

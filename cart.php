@@ -136,7 +136,7 @@ if ($action === 'clear') {
 if ($action === 'checkout') {
     if (!empty($_SESSION['cart'])) {
         $_SESSION['cart'] = [];
-        $_SESSION['flash_success'] = '🎉 Votre commande a bien été enregistrée ! Nous vous contacterons très prochainement pour la confirmer.';
+        $_SESSION['flash_success'] = 'Votre commande a bien été enregistrée ! Nous vous contacterons très prochainement pour la confirmer.';
     }
     header('Location: index.php#catalogue');
     exit;
