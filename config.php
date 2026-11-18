@@ -1,46 +1,53 @@
 <?php
 /* ============================================================
-   TISSUS PASSION — Configuration base de données
-   Utilise PDO avec requêtes préparées (sécurité renforcée)
+   TISSUS PASSION — Configuration : base de données, session, CSRF
+   ------------------------------------------------------------
+   Les identifiants de la base ne sont PAS écrits ici :
+   - sur le serveur du lycée, ils sont dans config.local.php
+     (fichier non versionné, voir .gitignore) ;
+   - en local avec XAMPP, on garde les valeurs par défaut
+     (root sans mot de passe).
+   Modèle à copier : config.local.example.php
    ============================================================ */
 
-/* ── Paramètres de connexion ─────────────────────────────── */
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'tissus_passion');  // Nom de la base de données
-define('DB_USER', 'root');            // Utilisateur XAMPP par défaut
-define('DB_PASS', '');                // Mot de passe XAMPP (vide par défaut)
+/* ── Identifiants de la base ─────────────────────────────── */
+if (file_exists(__DIR__ . '/config.local.php')) {
+    require __DIR__ . '/config.local.php';
+}
+defined('DB_HOST') || define('DB_HOST', 'localhost');
+defined('DB_NAME') || define('DB_NAME', 'tissus_passion');
+defined('DB_USER') || define('DB_USER', 'etud2-05');
+defined('DB_PASS') || define('DB_PASS', 'btssioslam988');
 define('DB_CHARSET', 'utf8mb4');
 
 /* ── Connexion PDO sécurisée ─────────────────────────────── */
 try {
-    $dsn = sprintf(
-        'mysql:host=%s;dbname=%s;charset=%s',
-        DB_HOST, DB_NAME, DB_CHARSET
-    );
+    $dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s', DB_HOST, DB_NAME, DB_CHARSET);
 
     $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,  // Lance des exceptions en cas d'erreur
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,        // Résultats en tableaux associatifs
-        PDO::ATTR_EMULATE_PREPARES   => false,                   // Désactive les requêtes préparées émulées
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
 
-    /* Compatibilité avec les fichiers qui utilisent encore $conn (mysqli) */
-    /* Note : les nouveaux fichiers utilisent $pdo directement             */
-    $conn = null; // Remplacé par $pdo
-
+    /* Heures de Nouméa, côté PHP et côté base (dates des commandes) */
+    date_default_timezone_set('Pacific/Noumea');
+    $pdo->exec("SET time_zone = '+11:00'");
 } catch (PDOException $e) {
-    /* En production, ne jamais afficher le détail de l'erreur */
-    error_log('Erreur de connexion DB : ' . $e->getMessage());
-    http_response_code(503);
-    die('Service temporairement indisponible. Veuillez réessayer plus tard.');
+    /* Le détail technique va dans le journal du serveur, jamais à l'écran */
+    error_log('Erreur BDD : ' . $e->getMessage());
+    http_response_code(500);
+    die('Le site est momentanément indisponible. Merci de réessayer plus tard.');
 }
 
 /* ── Démarrage sécurisé de la session ───────────────────── */
 if (session_status() === PHP_SESSION_NONE) {
+    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     session_start([
-        'cookie_httponly' => true,   // Inaccessible via JavaScript
-        'cookie_secure'   => false,  // Passer à true en production HTTPS
-        'cookie_samesite' => 'Strict',
+        'cookie_httponly' => true,          // cookie illisible en JavaScript
+        'cookie_secure'   => $https,        // envoyé seulement en HTTPS quand le site l'est
+        'cookie_samesite' => 'Strict',      // pas envoyé depuis un autre site (anti-CSRF)
+        'use_strict_mode' => true,          // refuse un identifiant de session inventé
     ]);
 }
 
@@ -51,7 +58,6 @@ if (empty($_SESSION['csrf_token'])) {
 
 /**
  * Vérifie le token CSRF envoyé via POST.
- * À appeler en début de chaque script qui traite un formulaire POST.
  */
 function verifyCsrf(): void {
     if (
@@ -63,20 +69,4 @@ function verifyCsrf(): void {
     }
 }
 
-/*
- * ── REQUÊTE SQL DE CRÉATION DE TABLE ────────────────────────
- *
- * À exécuter une seule fois via phpMyAdmin ou la console MySQL :
- *
- * CREATE DATABASE IF NOT EXISTS tissus_passion
- *     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
- *
- * USE tissus_passion;
- *
- * CREATE TABLE IF NOT EXISTS users (
- *     id         INT AUTO_INCREMENT PRIMARY KEY,
- *     email      VARCHAR(150) UNIQUE NOT NULL,
- *     password   VARCHAR(255) NOT NULL,
- *     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
- * ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
- */
+require_once __DIR__ . '/fonctions.php';

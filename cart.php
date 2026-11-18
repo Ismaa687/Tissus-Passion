@@ -1,147 +1,106 @@
 <?php
 /* ============================================================
-   TISSUS PASSION — Gestion du panier (actions POST)
-   Toutes les actions passent par ce fichier et redirigent
-   vers index.php#catalogue après traitement.
+   TISSUS PASSION — Panier et commande (actions POST)
+   Le panier est en session (id du tissu → mètres).
+   La commande est enregistrée en base (tables commandes et
+   lignes_commande), dans une transaction.
    ============================================================ */
 include "config.php";
-include "products_data.php";
 
-/* Seules les requêtes POST sont acceptées */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php#catalogue');
-    exit;
+    rediriger('accueil.php#catalogue');
 }
 
-/* Protection CSRF */
 verifyCsrf();
 
-/* L'utilisateur doit être connecté */
-if (empty($_SESSION['user_id'])) {
-    header('Location: auth.php');
-    exit;
+if (!estConnecte()) {
+    rediriger('auth.php');
 }
 
-/* Initialisation du panier en session si absent */
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+$_SESSION['cart'] = $_SESSION['cart'] ?? [];
+$action    = $_POST['action'] ?? '';
+$productId = (int) ($_POST['product_id'] ?? 0);
+
+/** Quantité en mètres, au demi-mètre près, entre 0,5 et 100. */
+function lireQuantite(string $defaut): float {
+    $qty = (float) str_replace(',', '.', $_POST['quantity'] ?? $defaut);
+    return round($qty * 2) / 2;
 }
 
-$action = $_POST['action'] ?? '';
+switch ($action) {
 
-/* ── Helper : recherche un produit par son ID ─────────────── */
-function findProduct(int $id, array $products): ?array {
-    foreach ($products as $p) {
-        if ($p['id'] === $id) return $p;
-    }
-    return null;
-}
+    /* ── Ajouter un tissu ──────────────────────────────────── */
+    case 'add':
+        $produit = trouverProduit($pdo, $productId);
+        if (!$produit) {
+            flash('error', 'Tissu introuvable.');
+            break;
+        }
+        $qty = max(0.5, min(100, lireQuantite('1')));
+        $total = ($_SESSION['cart'][$productId] ?? 0) + $qty;
+        $_SESSION['cart'][$productId] = min(100, $total);
+        flash('success', $produit['nom'] . ' ajouté au panier (' . formatQty($qty) . ').');
+        rediriger('accueil.php#catalogue');
 
-/* ── Helper : formate un prix XPF ────────────────────────────
-   Ex : 4500 → "4 500 XPF"
-*/
-function formatXpf(float $amount): string {
-    return number_format($amount, 0, ',', ' ') . ' XPF';
-}
-
-/* ============================================================
-   ACTION : Ajouter un article
-   POST : product_id (int), quantity (float, mètres)
-   ============================================================ */
-if ($action === 'add') {
-
-    $productId = (int) ($_POST['product_id'] ?? 0);
-    $qty       = round((float) str_replace(',', '.', $_POST['quantity'] ?? '1'), 2);
-
-    /* Validation */
-    if ($qty < 0.5) $qty = 0.5;
-    if ($qty > 100) $qty = 100;
-
-    $product = findProduct($productId, $PRODUCTS);
-
-    if ($product) {
-        /* Si le produit est déjà dans le panier, on additionne les quantités */
+    /* ── Modifier une quantité ─────────────────────────────── */
+    case 'update':
         if (isset($_SESSION['cart'][$productId])) {
-            $_SESSION['cart'][$productId]['qty'] = round(
-                $_SESSION['cart'][$productId]['qty'] + $qty, 2
-            );
-        } else {
-            $_SESSION['cart'][$productId] = [
-                'id'          => $product['id'],
-                'nom'         => $product['nom'],
-                'prix'        => $product['prix'],
-                'couleur'     => $product['couleur'],
-                'emoji'       => $product['emoji'],
-                'categorie'   => $product['categorie'],
-                'qty'         => $qty,
-            ];
+            $qty = lireQuantite('0');
+            if ($qty < 0.5) {
+                unset($_SESSION['cart'][$productId]);
+            } else {
+                $_SESSION['cart'][$productId] = min(100, $qty);
+            }
         }
-        $_SESSION['flash_success'] = htmlspecialchars($product['nom']) . ' ajouté au panier.';
-    } else {
-        $_SESSION['flash_error'] = 'Produit introuvable.';
-    }
+        break;
 
-    header('Location: index.php#catalogue');
-    exit;
-}
+    /* ── Retirer un tissu ──────────────────────────────────── */
+    case 'remove':
+        unset($_SESSION['cart'][$productId]);
+        break;
 
-/* ============================================================
-   ACTION : Modifier la quantité d'un article du panier
-   POST : product_id (int), quantity (float)
-   ============================================================ */
-if ($action === 'update') {
-
-    $productId = (int) ($_POST['product_id'] ?? 0);
-    $qty       = round((float) str_replace(',', '.', $_POST['quantity'] ?? '0'), 2);
-
-    if (isset($_SESSION['cart'][$productId])) {
-        if ($qty < 0.5) {
-            /* Quantité trop faible → suppression */
-            unset($_SESSION['cart'][$productId]);
-        } else {
-            if ($qty > 100) $qty = 100;
-            $_SESSION['cart'][$productId]['qty'] = $qty;
-        }
-    }
-
-    header('Location: index.php#catalogue');
-    exit;
-}
-
-/* ============================================================
-   ACTION : Supprimer un article du panier
-   POST : product_id (int)
-   ============================================================ */
-if ($action === 'remove') {
-
-    $productId = (int) ($_POST['product_id'] ?? 0);
-    unset($_SESSION['cart'][$productId]);
-
-    header('Location: index.php#catalogue');
-    exit;
-}
-
-/* ============================================================
-   ACTION : Vider le panier
-   ============================================================ */
-if ($action === 'clear') {
-    $_SESSION['cart'] = [];
-    header('Location: index.php#catalogue');
-    exit;
-}
-
-/* ============================================================
-   ACTION : Valider la commande (cosmétique)
-   ============================================================ */
-if ($action === 'checkout') {
-    if (!empty($_SESSION['cart'])) {
+    /* ── Vider le panier ───────────────────────────────────── */
+    case 'clear':
         $_SESSION['cart'] = [];
-        $_SESSION['flash_success'] = 'Votre commande a bien été enregistrée ! Nous vous contacterons très prochainement pour la confirmer.';
-    }
-    header('Location: index.php#catalogue');
-    exit;
+        break;
+
+    /* ── Valider la commande ───────────────────────────────── */
+    case 'checkout':
+        /* Prix relus en base : le client ne peut pas modifier un prix */
+        $lignes = lignesPanier($pdo);
+        if (empty($lignes)) {
+            flash('error', 'Votre panier est vide.');
+            break;
+        }
+        $total = array_sum(array_column($lignes, 'sous_total'));
+
+        try {
+            /* Tout ou rien : la commande et toutes ses lignes, ou rien du tout */
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare('INSERT INTO commandes (user_id, total) VALUES (?, ?)');
+            $stmt->execute([(int) $_SESSION['user_id'], $total]);
+            $commandeId = (int) $pdo->lastInsertId();
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO lignes_commande (commande_id, produit_id, nom_produit, prix_unitaire, quantite, sous_total)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            foreach ($lignes as $l) {
+                $stmt->execute([$commandeId, $l['id'], $l['nom'], $l['prix'], $l['qty'], $l['sous_total']]);
+            }
+
+            $pdo->commit();
+            $_SESSION['cart'] = [];
+            flash('success', 'Commande n°' . $commandeId . ' enregistrée (' . xpf($total) . '). '
+                . 'Nous vous contactons pour la confirmer ; suivez-la dans « Mon compte ».');
+
+        } catch (PDOException $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            error_log('Erreur commande : ' . $e->getMessage());
+            flash('error', 'La commande n\'a pas pu être enregistrée. Votre panier est conservé.');
+        }
+        break;
 }
 
-/* Fallback */
-header('Location: index.php#catalogue');
-exit;
+rediriger('accueil.php#panier');

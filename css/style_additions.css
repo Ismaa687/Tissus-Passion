@@ -1,0 +1,113 @@
+/* ============================================================
+   TISSUS PASSION — Styles additionnels de l'espace client
+   À placer dans : tissus_passion/css/style_additions.css
+   Utilisée par : dashboard.php (après style.css et auth.css)
+   Sections : « Modifier mon mot de passe » et « Supprimer mon compte »
+   ============================================================ */
+
+/* ── Section (bloc commun) ─────────────────────────────────── */
+.dash-section {
+    margin-top: 3.5rem;
+    padding-top: 3rem;
+    border-top: 1px solid var(--border, #e8e0d5);
+}
+.dash-section-header { margin-bottom: 1.8rem; max-width: 640px; }
+.dash-section-eyebrow {
+    display: inline-flex; align-items: center; gap: .7rem;
+    font-size: .78rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--terra, #c0784a); margin-bottom: .7rem;
+}
+.dash-section-eyebrow::before { content: ''; width: 26px; height: 2px; background: currentColor; }
+.dash-section-title {
+    font-family: var(--font-title, 'Playfair Display', serif);
+    font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 700; line-height: 1.2;
+    color: var(--text, #2b2420); margin-bottom: .6rem;
+}
+.dash-section-title em { font-style: italic; font-weight: 400; color: var(--terra, #c0784a); }
+.dash-section-sub { font-size: .95rem; color: var(--text-muted, #7a6e65); line-height: 1.65; }
+.dash-section-sub strong { color: var(--text, #2b2420); }
+.dash-section-divider {
+    width: 60px; height: 3px; border-radius: 3px;
+    background: var(--terra, #c0784a); margin-top: 1.2rem;
+}
+
+/* ── Carte formulaire ──────────────────────────────────────── */
+.dash-form-card {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #e8e0d5);
+    border-radius: var(--radius, 14px);
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(43, 36, 32, .06);
+}
+.dash-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 0 1.5rem;
+}
+.dash-form-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1rem; }
+
+/* ── Boutons ───────────────────────────────────────────────── */
+.dash-btn-primary,
+.dash-btn-danger,
+.dash-btn-danger-solid,
+.dash-btn-cancel {
+    display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+    padding: .85rem 1.6rem; border-radius: 999px;
+    font-family: var(--font-body, 'Jost', sans-serif); font-size: .9rem; font-weight: 500;
+    cursor: pointer; text-decoration: none; transition: all .25s ease;
+}
+.dash-btn-primary {
+    background: var(--terra, #c0784a); color: #fff; border: 2px solid var(--terra, #c0784a);
+}
+.dash-btn-primary:hover {
+    background: var(--terra-dark, #9c5a32); border-color: var(--terra-dark, #9c5a32);
+    transform: translateY(-2px);
+}
+.dash-btn-danger {
+    background: transparent; color: var(--danger, #b4423a); border: 2px solid var(--danger, #b4423a);
+}
+.dash-btn-danger:hover { background: var(--danger, #b4423a); color: #fff; }
+.dash-btn-danger-solid {
+    background: var(--danger, #b4423a); color: #fff; border: 2px solid var(--danger, #b4423a);
+}
+.dash-btn-danger-solid:hover { background: #8f2f28; border-color: #8f2f28; }
+.dash-btn-cancel {
+    background: transparent; color: var(--text, #2b2420); border: 2px solid var(--border, #e8e0d5);
+}
+.dash-btn-cancel:hover { border-color: var(--text, #2b2420); color: var(--text, #2b2420); }
+
+/* ── Zone de danger (suppression du compte) ────────────────── */
+.dash-section-danger { border-top-color: rgba(180, 66, 58, .25); }
+.dash-eyebrow-danger { color: var(--danger, #b4423a); }
+.dash-divider-danger { background: var(--danger, #b4423a); }
+.dash-card-danger { border-color: rgba(180, 66, 58, .3); background: #fffaf9; }
+
+.danger-warning {
+    display: flex; gap: 1rem; align-items: flex-start;
+    background: #fbeceb; border: 1px solid rgba(180, 66, 58, .2);
+    border-left: 4px solid var(--danger, #b4423a);
+    border-radius: var(--radius-sm, 8px);
+    padding: 1.1rem 1.3rem; margin-bottom: 1.5rem;
+}
+.danger-warning-icon {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; color: var(--danger, #b4423a);
+}
+.danger-warning-text strong { display: block; color: var(--danger, #b4423a); margin-bottom: .25rem; }
+.danger-warning-text p { font-size: .9rem; color: var(--text-muted, #7a6e65); line-height: 1.6; }
+
+.delete-confirm-box {
+    background: #fff; border: 2px dashed rgba(180, 66, 58, .45);
+    border-radius: var(--radius-sm, 8px); padding: 1.4rem 1.5rem;
+}
+.delete-confirm-text { font-size: .98rem; color: var(--text, #2b2420); margin-bottom: 1.2rem; line-height: 1.6; }
+.delete-confirm-text strong { color: var(--danger, #b4423a); }
+.delete-confirm-actions { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 560px) {
+    .dash-form-card { padding: 1.4rem; }
+    .dash-form-actions > *, .delete-confirm-actions > *, .delete-confirm-actions form button { width: 100%; }
+    .delete-confirm-actions form { width: 100%; }
+}

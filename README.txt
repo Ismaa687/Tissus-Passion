@@ -1,110 +1,106 @@
 ============================================================
-  TISSUS PASSION — Guide d'installation
+  TISSUS PASSION — Boutique en ligne de tissus (Nouméa)
+  PHP 8 · MariaDB/MySQL · PDO · BTS SIO SLAM
 ============================================================
-
-STRUCTURE DU PROJET
--------------------
-tissus_passion/
-├── index.php            ← Page principale (catalogue + panier + admin)
-├── auth.php             ← Page connexion / inscription
-├── dashboard.php        ← Espace client connecté
-├── login.php            ← Traitement formulaire connexion
-├── logout.php           ← Déconnexion
-├── register.php         ← Traitement inscription
-├── config.php           ← Configuration BDD + session + CSRF
-├── cart.php             ← Gestion panier (actions POST)
-├── products.php         ← Gestion catalogue admin (actions POST)
-├── products_data.php    ← Catalogue par défaut (9 tissus)
-├── style.css            ← Feuille de style principale
-├── css/
-│   └── auth.css         ← Styles auth + dashboard
-├── js/
-│   └── main.js          ← Script navbar mobile + animations
-├── img/                 ← ⚠️  PLACEZ VOS PHOTOS ICI
-│   ├── coton-imprime-floral.jpg
-│   ├── velours-terracotta.jpg
-│   ├── lin-naturel-ecru.jpg
-│   ├── tissu-pareo-tahitien.jpg
-│   ├── jacquard-prestige-dore.jpg
-│   ├── microfibre-anthracite.jpg
-│   ├── soie-sauvage-ivoire.jpg
-│   ├── coton-popeline-vert-sauge.jpg
-│   └── broderie-anglaise-blanche.jpg
-└── data/                ← Généré automatiquement (ne pas toucher)
-    └── products.json    ← Catalogue modifié par l'admin
-
-
-PHOTOS REQUISES (dossier img/)
--------------------------------
-Format recommandé : JPG ou WebP
-Ratio conseillé   : 4:3 (ex : 800×600 px)
-Taille max        : 300 Ko par image (optimisez avec TinyPNG)
-
-Noms de fichiers exacts (respecter la casse) :
-  1. coton-imprime-floral.jpg
-  2. velours-terracotta.jpg
-  3. lin-naturel-ecru.jpg
-  4. tissu-pareo-tahitien.jpg
-  5. jacquard-prestige-dore.jpg
-  6. microfibre-anthracite.jpg
-  7. soie-sauvage-ivoire.jpg
-  8. coton-popeline-vert-sauge.jpg
-  9. broderie-anglaise-blanche.jpg
-
-Tant que les photos ne sont pas présentes, une couleur de
-fond CSS est affichée à la place (aucune erreur).
-
-
-INSTALLATION (XAMPP)
---------------------
-1. Copiez ce dossier dans : C:/xampp/htdocs/tissus_passion/
-2. Lancez Apache + MySQL depuis le panneau XAMPP
-3. Ouvrez phpMyAdmin → http://localhost/phpmyadmin
-4. Exécutez ces requêtes SQL :
-
-   CREATE DATABASE IF NOT EXISTS tissus_passion
-     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-   USE tissus_passion;
-
-   CREATE TABLE IF NOT EXISTS users (
-     id         INT AUTO_INCREMENT PRIMARY KEY,
-     email      VARCHAR(150) UNIQUE NOT NULL,
-     password   VARCHAR(255) NOT NULL,
-     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-5. Accédez au site : http://localhost/tissus_passion/
-
-
-CONFIGURATION BDD (config.php)
--------------------------------
-Les valeurs par défaut XAMPP sont déjà configurées :
-  DB_HOST : localhost
-  DB_NAME : tissus_passion
-  DB_USER : root
-  DB_PASS : (vide)
-
-Modifiez ces valeurs si votre configuration est différente.
-
 
 FONCTIONNALITÉS
 ---------------
-• Catalogue de 9 tissus avec photos au mètre (XPF)
-• Filtre par catégorie (Coton, Lin, Velours, etc.)
-• Panier dynamique en session PHP (ajout, modif, suppression)
-• Connexion / inscription sécurisée (CSRF, bcrypt, brute-force)
-• Espace admin : ajouter, modifier, supprimer des tissus
-• Dashboard utilisateur : modification mot de passe, suppression compte
+Visiteur
+  • Catalogue des tissus avec photos, filtre par catégorie, prix au mètre (XPF)
+  • Horaires d'ouverture (jour en cours mis en avant) et plan d'accès
+
+Client (compte)
+  • Inscription / connexion (auth.php)
+  • Panier : ajout au demi-mètre près, modification, suppression
+  • Validation de commande : enregistrée en base, numéro de commande
+  • « Mon compte » : historique des commandes avec leur statut,
+    activité récente, changement de mot de passe, suppression du compte
+
+Administrateur (rôle « admin »)
+  • Gestion du catalogue : ajouter, modifier, supprimer un tissu,
+    choisir sa photo dans le dossier img/
+  • Suivi des commandes : changer le statut
+    (en attente → confirmée → prête à retirer, ou annulée)
+  • Commandes en attente et chiffre d'affaires du mois
+
+
+STRUCTURE
+---------
+tissus_passion/
+├── index.html              Redirige vers accueil.php
+├── accueil.php             Page principale : catalogue, panier, espace admin
+├── auth.php                Page connexion / inscription
+├── dashboard.php           Espace client (« Mon compte »)
+├── login.php               Traitement de la connexion
+├── register.php            Traitement de l'inscription
+├── logout.php              Déconnexion
+├── cart.php                Panier + validation de commande
+├── products.php            Gestion du catalogue (admin)
+├── commandes.php           Statut des commandes (admin)
+├── config.php              Connexion PDO, session, protection CSRF
+├── config.local.php        Identifiants du serveur du lycée (NON versionné)
+├── config.local.example.php  Modèle de config.local.php
+├── fonctions.php           Fonctions communes (droits, panier, affichage)
+├── products_data.php       Catalogue de démonstration (bouton « réinitialiser »)
+├── install.sql             Création des tables + 9 tissus de départ
+├── style.css, css/, js/    Mise en forme et scripts
+└── img/                    Photos des tissus
+
+
+BASE DE DONNÉES (install.sql)
+-----------------------------
+users                 comptes (email, mot de passe haché, rôle client/admin)
+produits              catalogue des tissus
+commandes             une commande par validation de panier (total, statut)
+lignes_commande       les tissus de chaque commande ; nom et prix COPIÉS
+                      au moment de l'achat (l'historique ne change pas si
+                      l'admin modifie ou supprime un tissu)
+tentatives_connexion  échecs de connexion, pour l'anti-brute-force
+
+Clés étrangères :
+  commandes.user_id        → users.id     ON DELETE SET NULL (la vente reste)
+  lignes_commande.commande_id → commandes.id ON DELETE CASCADE
+  lignes_commande.produit_id  → produits.id  ON DELETE SET NULL
+
+
+INSTALLATION EN LOCAL (XAMPP)
+-----------------------------
+1. Copier le dossier dans C:/xampp/htdocs/tissus_passion/
+2. Démarrer Apache et MySQL dans le panneau XAMPP
+3. phpMyAdmin (http://localhost/phpmyadmin) → onglet SQL →
+   coller le contenu de install.sql → Exécuter
+4. Ouvrir http://localhost/tissus_passion/
+5. S'inscrire, puis donner le rôle admin à son compte :
+   UPDATE users SET role = 'admin' WHERE email = 'ton.email@exemple.nc';
+   (se déconnecter / reconnecter pour voir l'espace admin)
+
+En local, config.php utilise root sans mot de passe (valeurs XAMPP).
+
+
+MISE EN LIGNE (serveur du lycée)
+--------------------------------
+1. Envoyer les fichiers (FileZilla), y compris config.local.php
+2. Dans phpMyAdmin du serveur, sélectionner SA base, puis exécuter
+   install.sql SANS les lignes CREATE DATABASE et USE
+3. Si la table users existait déjà, ajouter la colonne role :
+   ALTER TABLE users ADD COLUMN role ENUM('client','admin') NOT NULL DEFAULT 'client' AFTER password;
 
 
 SÉCURITÉ
 --------
-• Protection CSRF sur tous les formulaires POST
-• Mots de passe hashés avec bcrypt (coût 12)
-• Requêtes PDO préparées (anti-injection SQL)
-• Anti-brute-force sur la connexion (5 tentatives / 15 min)
-• Sessions httpOnly + SameSite=Strict
-• Régénération d'ID de session à la connexion
-
+• Requêtes préparées PDO partout (anti-injection SQL)
+• Mots de passe hachés avec bcrypt (password_hash / password_verify)
+• Jeton CSRF sur tous les formulaires POST
+• Échappement de tout l'affichage avec htmlspecialchars (anti-XSS)
+• Rôle admin vérifié EN BASE à chaque action d'administration
+• Prix toujours relus en base au moment de la commande
+  (le client ne peut pas modifier un prix)
+• Commande enregistrée dans une transaction (tout ou rien)
+• Anti-brute-force en base : 5 échecs en 15 min par IP ou par email
+• Session : cookie httpOnly, SameSite=Strict, Secure en HTTPS,
+  nouvel identifiant à la connexion (anti-fixation)
+• Identifiants de la base hors du code (config.local.php, .gitignore)
+• Messages d'erreur techniques dans le journal du serveur, jamais à l'écran
+• Couleur et photo d'un tissu contrôlées (pas d'injection CSS,
+  pas de fichier en dehors du dossier img/)
 ============================================================

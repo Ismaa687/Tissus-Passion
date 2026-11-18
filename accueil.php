@@ -4,56 +4,48 @@
    Catalogue dynamique, panier PHP en session, gestion admin
    ============================================================ */
 include "config.php";
-include "products_data.php"; /* Catalogue par défaut */
 
-/* ── Chargement des produits : JSON si présent, sinon défaut ─ */
-define('PRODUCTS_JSON', __DIR__ . '/data/products.json');
-if (file_exists(PRODUCTS_JSON)) {
-    $json      = file_get_contents(PRODUCTS_JSON);
-    $PRODUCTS  = json_decode($json, true) ?? $PRODUCTS;
+/* ── Catalogue : table `produits` ────────────────────────── */
+$PRODUCTS = chargerProduits($pdo);
+
+/* ── Panier : quantités en session, noms et prix relus en base ── */
+$cartItems = lignesPanier($pdo);
+$cartTotal = array_sum(array_column($cartItems, 'sous_total'));
+$cartCount = count($cartItems);
+
+/* ── Messages flash ──────────────────────────────────────── */
+$flashSuccess = lireFlash('success');
+$flashError   = lireFlash('error');
+
+$isLoggedIn = estConnecte();
+$isAdmin    = estAdmin();
+$userEmail  = e($_SESSION['user_email'] ?? '');
+$initiale   = strtoupper(mb_substr($_SESSION['user_email'] ?? '', 0, 1));
+$csrf       = e($_SESSION['csrf_token']);
+
+/* ── Données de l'espace administration ──────────────────── */
+$photos = [];
+$commandesAdmin = [];
+$statsAdmin = ['en_attente' => 0, 'ca_mois' => 0];
+if ($isAdmin) {
+    $photos = photosDisponibles();
+    $commandesAdmin = $pdo->query(
+        "SELECT c.id, c.total, c.statut, c.created_at, u.email,
+                GROUP_CONCAT(CONCAT(l.nom_produit, ' × ', TRIM(TRAILING '.' FROM TRIM(TRAILING '0' FROM l.quantite)), ' m')
+                             ORDER BY l.id SEPARATOR ', ') AS detail
+         FROM commandes c
+         LEFT JOIN users u ON u.id = c.user_id
+         LEFT JOIN lignes_commande l ON l.commande_id = c.id
+         GROUP BY c.id
+         ORDER BY c.created_at DESC, c.id DESC
+         LIMIT 30"
+    )->fetchAll();
+    $statsAdmin['en_attente'] = (int) $pdo->query("SELECT COUNT(*) FROM commandes WHERE statut = 'en_attente'")->fetchColumn();
+    $statsAdmin['ca_mois'] = (int) $pdo->query(
+        "SELECT COALESCE(SUM(total), 0) FROM commandes
+         WHERE statut <> 'annulee' AND created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')"
+    )->fetchColumn();
 }
-
-/* ── Initialisation du panier ────────────────────────────────  */
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
-}
-
-/* ── Calculs panier ──────────────────────────────────────────  */
-$cartItems = $_SESSION['cart'];
-$cartTotal = 0;
-$cartCount = 0;
-foreach ($cartItems as $item) {
-    $cartTotal += $item['prix'] * $item['qty'];
-    $cartCount++;
-}
-
-/* ── Messages flash ──────────────────────────────────────────  */
-$flashSuccess = $_SESSION['flash_success'] ?? '';
-$flashError   = $_SESSION['flash_error']   ?? '';
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
-
-/* ── Helpers ─────────────────────────────────────────────────  */
-/**
- * Formate un montant en XPF avec séparateur de milliers
- * Ex : 4500 → "4 500 XPF"
- */
-function xpf(float $amount): string {
-    return number_format($amount, 0, ',', ' ') . ' XPF';
-}
-
-/**
- * Formate une quantité en mètres (supprime les zéros inutiles)
- * Ex : 1.50 → "1,5 m" | 2.00 → "2 m"
- */
-function formatQty(float $qty): string {
-    $str = rtrim(number_format($qty, 2, ',', ''), '0');
-    $str = rtrim($str, ',');
-    return $str . ' m';
-}
-
-$isLoggedIn = !empty($_SESSION['user_id']);
-$userEmail  = htmlspecialchars($_SESSION['user_email'] ?? '');
-$initiale   = strtoupper(mb_substr($userEmail, 0, 1));
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -756,7 +748,7 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
      NAVBAR
 ══════════════════════════════════════════════════════════ -->
 <nav class="navbar">
-    <a href="index.php" class="nav-logo">
+    <a href="accueil.php" class="nav-logo">
         Tissus <span>Passion</span>
     </a>
 
@@ -766,6 +758,9 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
         <li><a href="#panier">Panier</a></li>
         <li><a href="#horaires">Horaires</a></li>
         <li><a href="#lieu">Lieu</a></li>
+        <?php if ($isAdmin): ?>
+            <li><a href="#admin-products" style="color:var(--terra);">Administration</a></li>
+        <?php endif; ?>
         <?php if ($isLoggedIn): ?>
             <li><a href="dashboard.php">Mon compte</a></li>
         <?php else: ?>
@@ -809,6 +804,14 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
         </button>
     </div>
 </nav>
+
+<?php if ($flashSuccess || $flashError): ?>
+<!-- Message après une action (ajout au panier, commande, admin…) -->
+<div class="flash-toast <?= $flashError ? 'flash-error' : 'flash-success' ?>" id="flashToast" role="status">
+    <span><?= e($flashError ?: $flashSuccess) ?></span>
+    <button type="button" onclick="this.parentElement.remove()" aria-label="Fermer">✕</button>
+</div>
+<?php endif; ?>
 
 <!-- ══════════════════════════════════════════════════════════
      HERO
@@ -865,20 +868,6 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
             minimum 0,5 m par commande.
         </p>
 
-        <?php if (!empty($flashSuccess)): ?>
-        <div class="flash-alert flash-success">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <?= $flashSuccess ?>
-        </div>
-        <?php endif; ?>
-
-        <?php if (!empty($flashError)): ?>
-        <div class="flash-alert flash-error">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <?= $flashError ?>
-        </div>
-        <?php endif; ?>
-
         <!-- Filtres par catégorie -->
         <?php
         $categories = array_unique(array_column($PRODUCTS, 'categorie'));
@@ -900,8 +889,9 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
             ?>
             <div class="product-card" data-cat="<?= htmlspecialchars($p['categorie']) ?>">
                 <!-- Swatch coloré -->
-                <div class="product-swatch" style="background:<?= htmlspecialchars($p['couleur']) ?>;">
-                    <?= htmlspecialchars($p['emoji']) ?>
+                <div class="product-swatch" style="background:<?= e(fondProduit($p)) ?>;"
+                     <?= photoProduit($p) ? 'role="img" aria-label="Photo : ' . e($p['nom']) . '"' : '' ?>>
+                    <?= photoProduit($p) ? '' : e($p['emoji']) ?>
                     <span class="product-badge"><?= htmlspecialchars($p['categorie']) ?></span>
                 </div>
 
@@ -1002,12 +992,12 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
                 <?php else: ?>
                 <div class="cart-items-list">
                     <?php foreach ($cartItems as $item):
-                        $subtotal = $item['prix'] * $item['qty'];
+                        $subtotal = $item['sous_total'];
                     ?>
                     <div class="cart-item-row">
                         <!-- Swatch -->
-                        <div class="cart-swatch-sm" style="background:<?= htmlspecialchars($item['couleur']) ?>;">
-                            <?= htmlspecialchars($item['emoji'] ?? '🧵') ?>
+                        <div class="cart-swatch-sm" style="background:<?= e(fondProduit($item)) ?>;">
+                            <?= photoProduit($item) ? '' : e($item['emoji']) ?>
                         </div>
 
                         <!-- Infos article -->
@@ -1075,7 +1065,7 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
                         <?php foreach ($cartItems as $item): ?>
                         <div class="cart-summary-line">
                             <span><?= htmlspecialchars($item['nom']) ?> × <?= formatQty((float)$item['qty']) ?></span>
-                            <strong><?= xpf($item['prix'] * $item['qty']) ?></strong>
+                            <strong><?= xpf($item['sous_total']) ?></strong>
                         </div>
                         <?php endforeach; ?>
                     </div>
@@ -1134,7 +1124,7 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
 <!-- ══════════════════════════════════════════════════════════
      SECTION ADMIN — Gestion du catalogue (connectés)
 ══════════════════════════════════════════════════════════ -->
-<?php if ($isLoggedIn): ?>
+<?php if ($isAdmin): ?>
 <section class="section admin-section" id="admin-products">
     <div class="container">
         <div class="admin-eyebrow">
@@ -1183,6 +1173,15 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
                         <label class="form-label">Couleur CSS (dégradé)</label>
                         <input type="text" name="couleur" class="form-input" placeholder="Ex : linear-gradient(135deg, #D4956A, #8B5030)" maxlength="200" value="linear-gradient(135deg, #C9B89A, #8A7048)">
                     </div>
+                    <div class="form-group full-col">
+                        <label class="form-label">Photo (dossier img/)</label>
+                        <select name="image" class="form-input">
+                            <option value="">Aucune photo : dégradé de couleur</option>
+                            <?php foreach ($photos as $photo): ?>
+                            <option value="<?= e($photo) ?>"><?= e(basename($photo)) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="admin-form-actions">
                     <button type="submit" class="btn-admin-submit">
@@ -1212,8 +1211,8 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
                     <td data-label="ID"><?= (int)$p['id'] ?></td>
                     <td data-label="Tissu">
                         <div class="admin-swatch-cell">
-                            <div class="admin-swatch-mini" style="background:<?= htmlspecialchars($p['couleur']) ?>;">
-                                <?= htmlspecialchars($p['emoji'] ?? '🧵') ?>
+                            <div class="admin-swatch-mini" style="background:<?= e(fondProduit($p)) ?>;">
+                                <?= photoProduit($p) ? '' : e($p['emoji']) ?>
                             </div>
                             <div>
                                 <div style="font-weight:600;"><?= htmlspecialchars($p['nom']) ?></div>
@@ -1231,11 +1230,11 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
                             <button
                                 type="button"
                                 class="btn-admin-edit"
-                                onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)">
+                                onclick="openEditModal(<?= e(json_encode($p)) ?>)">
                                 ✏️ Modifier
                             </button>
                             <!-- Supprimer -->
-                            <form action="products.php" method="POST" style="display:inline;" onsubmit="return confirm('Supprimer « <?= htmlspecialchars(addslashes($p['nom'])) ?> » ?')">
+                            <form action="products.php" method="POST" style="display:inline;" onsubmit="return confirm(<?= e(json_encode('Supprimer « ' . $p['nom'] . ' » ?')) ?>)">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                                 <input type="hidden" name="action" value="product_delete">
                                 <input type="hidden" name="product_id" value="<?= (int)$p['id'] ?>">
@@ -1251,15 +1250,67 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
 
         <!-- Réinitialiser le catalogue -->
         <div style="margin-top:1.2rem; text-align:right;">
-            <form action="products.php" method="POST" style="display:inline;" onsubmit="return confirm('Réinitialiser le catalogue avec les produits par défaut ?')">
+            <form action="products.php" method="POST" style="display:inline;" onsubmit="return confirm('Remplacer tout le catalogue par les 9 tissus de démonstration ?')">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                 <input type="hidden" name="action" value="product_reset">
                 <button type="submit" style="font-size:.78rem; color:var(--text-muted,#aaa); background:none; border:none; cursor:pointer; text-decoration:underline; font-family:'Jost',sans-serif;">
-                    Réinitialiser le catalogue par défaut
+                    Réinitialiser le catalogue de démonstration
                 </button>
             </form>
         </div>
 
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     ADMIN — SUIVI DES COMMANDES
+══════════════════════════════════════════════════════════ -->
+<section class="section admin-section" id="admin-commandes" style="padding-top:0;">
+    <div class="container">
+        <div class="admin-header-row">
+            <div>
+                <h2 class="section-title" style="margin:0;">Suivi des <em>commandes</em></h2>
+                <p style="font-size:.88rem; color:var(--text-muted,#888); margin-top:.4rem;">
+                    <?= $statsAdmin['en_attente'] ?> commande(s) en attente ·
+                    <?= xpf($statsAdmin['ca_mois']) ?> de ventes ce mois-ci (hors annulées)
+                </p>
+            </div>
+        </div>
+
+        <?php if (empty($commandesAdmin)): ?>
+        <p style="margin-top:1.2rem; color:var(--text-muted,#888);">Aucune commande pour le moment.</p>
+        <?php else: ?>
+        <div style="margin-top:1.5rem; overflow-x:auto;">
+            <table class="admin-table">
+                <thead>
+                    <tr><th>N°</th><th>Date</th><th>Client</th><th>Détail</th><th>Total</th><th>Statut</th></tr>
+                </thead>
+                <tbody>
+                <?php foreach ($commandesAdmin as $c): ?>
+                <tr>
+                    <td data-label="N°"><?= (int) $c['id'] ?></td>
+                    <td data-label="Date"><?= e(date('d/m/Y H:i', strtotime($c['created_at']))) ?></td>
+                    <td data-label="Client"><?= $c['email'] ? e($c['email']) : '<em>compte supprimé</em>' ?></td>
+                    <td data-label="Détail" style="max-width:280px; font-size:.82rem;"><?= e($c['detail'] ?? '') ?></td>
+                    <td data-label="Total"><strong><?= xpf((float) $c['total']) ?></strong></td>
+                    <td data-label="Statut">
+                        <form action="commandes.php" method="POST" style="display:flex; gap:.4rem; align-items:center;">
+                            <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                            <input type="hidden" name="commande_id" value="<?= (int) $c['id'] ?>">
+                            <select name="statut" class="form-input" style="padding:.4rem .5rem; font-size:.8rem;" onchange="this.form.submit()">
+                                <?php foreach (STATUTS_COMMANDE as $s): ?>
+                                <option value="<?= $s ?>" <?= $s === $c['statut'] ? 'selected' : '' ?>><?= e(libelleStatut($s)) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <noscript><button type="submit" class="btn-admin-edit">OK</button></noscript>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
     </div>
 </section>
 
@@ -1296,6 +1347,15 @@ $initiale   = strtoupper(mb_substr($userEmail, 0, 1));
                 <div class="form-group full-col">
                     <label class="form-label">Couleur CSS</label>
                     <input type="text" name="couleur" id="edit_couleur" class="form-input" maxlength="200">
+                </div>
+                <div class="form-group full-col">
+                    <label class="form-label">Photo (dossier img/)</label>
+                    <select name="image" id="edit_image" class="form-input">
+                        <option value="">Aucune photo : dégradé de couleur</option>
+                        <?php foreach ($photos as $photo): ?>
+                        <option value="<?= e($photo) ?>"><?= e(basename($photo)) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
             <div class="admin-form-actions">
@@ -1519,6 +1579,7 @@ function openEditModal(product) {
     document.getElementById('edit_emoji').value        = product.emoji || '';
     document.getElementById('edit_description').value  = product.description;
     document.getElementById('edit_couleur').value      = product.couleur;
+    document.getElementById('edit_image').value        = product.image || '';
     document.getElementById('editModalOverlay').classList.add('open');
     document.body.style.overflow = 'hidden';
 }
@@ -1532,6 +1593,9 @@ function closeEditModal() {
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeEditModal();
 });
+
+/* ── Le message disparaît tout seul après 6 secondes ─────── */
+setTimeout(() => document.getElementById('flashToast')?.remove(), 6000);
 
 /* ── Scroll vers le panier depuis l'icône navbar ─────────── */
 function scrollToCart() {
@@ -1547,6 +1611,19 @@ document.querySelectorAll('[data-toggle]').forEach(btn => {
 </script>
 
 <style>
+/* Bandeau de message après une action */
+.flash-toast {
+    position: fixed; top: 84px; left: 50%; transform: translateX(-50%);
+    z-index: 1000; max-width: min(92vw, 620px);
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: .9rem 1.1rem; border-radius: 8px;
+    font-family: 'Jost', sans-serif; font-size: .88rem; line-height: 1.5;
+    box-shadow: 0 10px 30px rgba(0,0,0,.12);
+}
+.flash-toast.flash-success { background: #f0faf4; border: 1px solid #a3d9b1; color: #276744; }
+.flash-toast.flash-error   { background: #fff5f5; border: 1px solid #fca5a5; color: #991b1b; }
+.flash-toast button { background: none; border: none; cursor: pointer; color: inherit; font-size: .9rem; }
+
 /* Utilitaire : .hidden masque un élément */
 .hidden { display: none !important; }
 </style>

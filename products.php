@@ -1,201 +1,132 @@
 <?php
 /* ============================================================
-   TISSUS PASSION — Gestion des produits (admin simplifié)
-   Stockage dans un fichier JSON côté serveur.
-   Seul un utilisateur connecté peut accéder à ces actions.
+   TISSUS PASSION — Gestion du catalogue (administrateur)
+   Ajout, modification, suppression de tissus dans la table
+   `produits`. Réservé au rôle « admin » (vérifié en base).
    ============================================================ */
 include "config.php";
 
-/* Seules les requêtes POST sont acceptées */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php#catalogue');
-    exit;
+    rediriger('accueil.php#catalogue');
 }
 
-/* Protection CSRF */
 verifyCsrf();
+exigerAdmin($pdo);
 
-/* L'utilisateur doit être connecté */
-if (empty($_SESSION['user_id'])) {
-    header('Location: auth.php');
-    exit;
-}
-
-/* ── Fichier de données JSON ─────────────────────────────────
-   Si le fichier n'existe pas, on initialise depuis products_data.php
-*/
-define('PRODUCTS_JSON', __DIR__ . '/data/products.json');
-
-if (!is_dir(__DIR__ . '/data')) {
-    mkdir(__DIR__ . '/data', 0755, true);
+/** Nettoie un texte saisi : sans balises, sans espaces autour, longueur limitée. */
+function texte(string $cle, int $max = 200): string {
+    return mb_substr(trim(strip_tags($_POST[$cle] ?? '')), 0, $max);
 }
 
 /**
- * Charge les produits : depuis le JSON si présent, sinon depuis products_data.php
+ * Lit et vérifie le formulaire tissu.
+ * Renvoie [données, erreurs].
  */
-function loadProducts(): array {
-    if (file_exists(PRODUCTS_JSON)) {
-        $json = file_get_contents(PRODUCTS_JSON);
-        return json_decode($json, true) ?? [];
-    }
-    include __DIR__ . '/products_data.php';
-    return $PRODUCTS ?? [];
-}
-
-/**
- * Sauvegarde les produits dans le JSON
- */
-function saveProducts(array $products): void {
-    file_put_contents(PRODUCTS_JSON, json_encode(array_values($products), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-}
-
-/**
- * Génère un nouvel ID unique (max existant + 1)
- */
-function nextId(array $products): int {
-    if (empty($products)) return 1;
-    return max(array_column($products, 'id')) + 1;
-}
-
-/**
- * Sanitize une chaîne de caractères
- */
-function sanitizeStr(string $str, int $max = 200): string {
-    return mb_substr(trim(strip_tags($str)), 0, $max);
-}
-
-$action   = $_POST['action'] ?? '';
-$products = loadProducts();
-
-/* ============================================================
-   ACTION : Ajouter un nouveau tissu
-   POST : nom, description, prix, categorie, couleur
-   ============================================================ */
-if ($action === 'product_add') {
-
-    $nom         = sanitizeStr($_POST['nom'] ?? '');
-    $description = sanitizeStr($_POST['description'] ?? '', 500);
-    $prix        = (int) ($_POST['prix'] ?? 0);
-    $categorie   = sanitizeStr($_POST['categorie'] ?? '');
-    $couleur     = sanitizeStr($_POST['couleur'] ?? 'linear-gradient(135deg,#C9B89A,#8A7048)');
-    $emoji       = sanitizeStr($_POST['emoji'] ?? '🧵', 10);
-
-    $errors = [];
-    if (empty($nom))         $errors[] = 'Le nom du tissu est obligatoire.';
-    if (empty($description)) $errors[] = 'La description est obligatoire.';
-    if ($prix < 100)         $errors[] = 'Le prix doit être supérieur à 100 XPF.';
-    if ($prix > 50000)       $errors[] = 'Le prix semble trop élevé.';
-    if (empty($categorie))   $errors[] = 'La catégorie est obligatoire.';
-
-    if (!empty($errors)) {
-        $_SESSION['flash_error'] = implode(' ', $errors);
-        header('Location: index.php#admin-products');
-        exit;
-    }
-
-    $products[] = [
-        'id'          => nextId($products),
-        'nom'         => $nom,
-        'description' => $description,
-        'prix'        => $prix,
-        'categorie'   => $categorie,
-        'couleur'     => $couleur,
-        'emoji'       => $emoji,
+function lireFormulaireTissu(): array {
+    $d = [
+        'nom'         => texte('nom', 150),
+        'description' => texte('description', 500),
+        'prix'        => (int) ($_POST['prix'] ?? 0),
+        'categorie'   => texte('categorie', 60),
+        'couleur'     => texte('couleur', 200) ?: 'linear-gradient(135deg, #C9B89A, #8A7048)',
+        'emoji'       => texte('emoji', 10) ?: '🧵',
+        'image'       => texte('image', 150) ?: null,
     ];
 
-    saveProducts($products);
-    $_SESSION['flash_success'] = 'Tissu « ' . htmlspecialchars($nom) . ' » ajouté au catalogue.';
-    header('Location: index.php#admin-products');
-    exit;
+    $erreurs = [];
+    if ($d['nom'] === '')         $erreurs[] = 'Le nom du tissu est obligatoire.';
+    if ($d['description'] === '') $erreurs[] = 'La description est obligatoire.';
+    if ($d['categorie'] === '')   $erreurs[] = 'La catégorie est obligatoire.';
+    if ($d['prix'] < 100)         $erreurs[] = 'Le prix doit être d\'au moins 100 XPF.';
+    if ($d['prix'] > 50000)       $erreurs[] = 'Le prix semble trop élevé (50 000 XPF maximum).';
+    if (!couleurValide($d['couleur'])) {
+        $erreurs[] = 'Couleur invalide : utilise un code (#C9826B) ou un dégradé linear-gradient(…).';
+    }
+    /* La photo doit être un fichier présent dans img/ : rien d'autre n'est accepté */
+    if ($d['image'] !== null && !in_array($d['image'], photosDisponibles(), true)) {
+        $erreurs[] = 'Photo introuvable dans le dossier img/.';
+    }
+    return [$d, $erreurs];
 }
 
-/* ============================================================
-   ACTION : Modifier un tissu existant
-   POST : product_id, nom, description, prix, categorie, couleur
-   ============================================================ */
-if ($action === 'product_edit') {
+$action = $_POST['action'] ?? '';
 
-    $productId   = (int) ($_POST['product_id'] ?? 0);
-    $nom         = sanitizeStr($_POST['nom'] ?? '');
-    $description = sanitizeStr($_POST['description'] ?? '', 500);
-    $prix        = (int) ($_POST['prix'] ?? 0);
-    $categorie   = sanitizeStr($_POST['categorie'] ?? '');
-    $couleur     = sanitizeStr($_POST['couleur'] ?? '');
-    $emoji       = sanitizeStr($_POST['emoji'] ?? '🧵', 10);
+try {
+    switch ($action) {
 
-    $errors = [];
-    if (empty($nom))         $errors[] = 'Le nom est obligatoire.';
-    if ($prix < 100)         $errors[] = 'Prix invalide.';
-
-    if (!empty($errors)) {
-        $_SESSION['flash_error'] = implode(' ', $errors);
-        header('Location: index.php#admin-products');
-        exit;
-    }
-
-    $updated = false;
-    foreach ($products as &$p) {
-        if ($p['id'] === $productId) {
-            $p['nom']         = $nom;
-            $p['description'] = $description;
-            $p['prix']        = $prix;
-            $p['categorie']   = $categorie;
-            if (!empty($couleur)) $p['couleur'] = $couleur;
-            if (!empty($emoji))   $p['emoji']   = $emoji;
-            $updated = true;
+        /* ── Ajouter un tissu ──────────────────────────────── */
+        case 'product_add':
+            [$d, $erreurs] = lireFormulaireTissu();
+            if ($erreurs) {
+                flash('error', implode(' ', $erreurs));
+                break;
+            }
+            $stmt = $pdo->prepare(
+                'INSERT INTO produits (nom, description, prix, categorie, couleur, emoji, image)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([$d['nom'], $d['description'], $d['prix'], $d['categorie'], $d['couleur'], $d['emoji'], $d['image']]);
+            flash('success', 'Tissu « ' . $d['nom'] . ' » ajouté au catalogue.');
             break;
-        }
-    }
-    unset($p);
 
-    if ($updated) {
-        saveProducts($products);
-        $_SESSION['flash_success'] = 'Tissu modifié avec succès.';
-    } else {
-        $_SESSION['flash_error'] = 'Tissu introuvable.';
-    }
+        /* ── Modifier un tissu ─────────────────────────────── */
+        case 'product_edit':
+            $id = (int) ($_POST['product_id'] ?? 0);
+            [$d, $erreurs] = lireFormulaireTissu();
+            if ($erreurs) {
+                flash('error', implode(' ', $erreurs));
+                break;
+            }
+            $stmt = $pdo->prepare(
+                'UPDATE produits SET nom = ?, description = ?, prix = ?, categorie = ?, couleur = ?, emoji = ?, image = ?
+                 WHERE id = ?'
+            );
+            $stmt->execute([$d['nom'], $d['description'], $d['prix'], $d['categorie'], $d['couleur'], $d['emoji'], $d['image'], $id]);
+            /* rowCount() vaut 0 aussi si rien n'a changé : on vérifie l'existence à part */
+            if (trouverProduit($pdo, $id)) {
+                flash('success', 'Tissu « ' . $d['nom'] . ' » modifié.');
+            } else {
+                flash('error', 'Tissu introuvable.');
+            }
+            break;
 
-    header('Location: index.php#admin-products');
-    exit;
+        /* ── Supprimer un tissu ────────────────────────────── */
+        case 'product_delete':
+            $id = (int) ($_POST['product_id'] ?? 0);
+            $stmt = $pdo->prepare('DELETE FROM produits WHERE id = ?');
+            $stmt->execute([$id]);
+            if ($stmt->rowCount() > 0) {
+                /* Les commandes passées gardent le nom et le prix du tissu (lignes_commande) */
+                flash('success', 'Tissu supprimé du catalogue.');
+            } else {
+                flash('error', 'Tissu introuvable.');
+            }
+            break;
+
+        /* ── Réinitialiser le catalogue de démonstration ───── */
+        case 'product_reset':
+            include __DIR__ . '/products_data.php';
+            $pdo->beginTransaction();
+            $pdo->exec('DELETE FROM produits');
+            $stmt = $pdo->prepare(
+                'INSERT INTO produits (nom, description, prix, categorie, couleur, emoji, image)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            );
+            foreach ($PRODUCTS as $p) {
+                $stmt->execute([$p['nom'], $p['description'], $p['prix'], $p['categorie'], $p['couleur'], $p['emoji'], $p['image']]);
+            }
+            $pdo->commit();
+            $_SESSION['cart'] = [];
+            flash('success', 'Catalogue réinitialisé avec les 9 tissus par défaut.');
+            break;
+
+        default:
+            rediriger('accueil.php#catalogue');
+    }
+} catch (PDOException $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('Erreur catalogue : ' . $e->getMessage());
+    flash('error', 'Une erreur est survenue. Le catalogue n\'a pas été modifié.');
 }
 
-/* ============================================================
-   ACTION : Supprimer un tissu
-   POST : product_id
-   ============================================================ */
-if ($action === 'product_delete') {
-
-    $productId = (int) ($_POST['product_id'] ?? 0);
-    $before    = count($products);
-    $products  = array_filter($products, fn($p) => $p['id'] !== $productId);
-
-    if (count($products) < $before) {
-        saveProducts($products);
-        /* Retire aussi le produit du panier si présent */
-        if (isset($_SESSION['cart'][$productId])) {
-            unset($_SESSION['cart'][$productId]);
-        }
-        $_SESSION['flash_success'] = 'Tissu supprimé du catalogue.';
-    } else {
-        $_SESSION['flash_error'] = 'Tissu introuvable.';
-    }
-
-    header('Location: index.php#admin-products');
-    exit;
-}
-
-/* ============================================================
-   ACTION : Réinitialiser le catalogue (recharge products_data.php)
-   ============================================================ */
-if ($action === 'product_reset') {
-    if (file_exists(PRODUCTS_JSON)) {
-        unlink(PRODUCTS_JSON);
-    }
-    $_SESSION['flash_success'] = 'Catalogue réinitialisé avec les produits par défaut.';
-    header('Location: index.php#admin-products');
-    exit;
-}
-
-/* Fallback */
-header('Location: index.php#catalogue');
-exit;
+rediriger('accueil.php#admin-products');

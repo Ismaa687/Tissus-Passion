@@ -12,8 +12,8 @@ if (empty($_SESSION['user_id'])) {
 }
 
 $userId    = (int) $_SESSION['user_id'];
-$userEmail = htmlspecialchars($_SESSION['user_email'] ?? 'Utilisateur');
-$initiale  = strtoupper(mb_substr($userEmail, 0, 1));
+$userEmail = e($_SESSION['user_email'] ?? 'Utilisateur');
+$initiale  = strtoupper(mb_substr($_SESSION['user_email'] ?? 'U', 0, 1));
 
 /* ── Messages flash ──────────────────────────────────────── */
 $flashSuccess = '';
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
         session_destroy();
 
         /* Redirection vers l'accueil */
-        header('Location: index.php');
+        header('Location: accueil.php');
         exit;
 
     } catch (PDOException $e) {
@@ -103,11 +103,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     }
 }
 
-/* ── Données supplémentaires du profil ───────────────────── */
-$stmt = $pdo->prepare("SELECT created_at FROM users WHERE id = ?");
+/* ── Données du profil ───────────────────────────────────── */
+$stmt = $pdo->prepare("SELECT created_at, role FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $row = $stmt->fetch();
-$memberSince = $row ? date('d/m/Y', strtotime($row['created_at'])) : '—';
+if (!$row) {
+    /* Compte supprimé entre-temps : on ferme la session */
+    $_SESSION = [];
+    session_destroy();
+    header('Location: auth.php');
+    exit;
+}
+$memberSince = date('d/m/Y', strtotime($row['created_at']));
+$_SESSION['user_role'] = $row['role'];
+$isAdmin = $row['role'] === 'admin';
+
+/* ── Mes commandes (avec le détail de chaque ligne) ──────── */
+$stmt = $pdo->prepare(
+    "SELECT id, total, statut, created_at FROM commandes WHERE user_id = ? ORDER BY created_at DESC, id DESC"
+);
+$stmt->execute([$userId]);
+$mesCommandes = $stmt->fetchAll();
+
+$lignesParCommande = [];
+if ($mesCommandes) {
+    $ids = array_column($mesCommandes, 'id');
+    $marques = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT * FROM lignes_commande WHERE commande_id IN ($marques) ORDER BY id");
+    $stmt->execute($ids);
+    foreach ($stmt->fetchAll() as $l) {
+        $lignesParCommande[$l['commande_id']][] = $l;
+    }
+}
+$nbCommandes = count($mesCommandes);
+$totalDepense = 0;
+foreach ($mesCommandes as $c) {
+    if ($c['statut'] !== 'annulee') $totalDepense += (int) $c['total'];
+}
+
+/* ── Activité récente : vraies données (commandes + inscription) ── */
+$activite = [];
+foreach (array_slice($mesCommandes, 0, 3) as $c) {
+    $activite[] = [
+        'texte' => 'Commande n°' . $c['id'] . ' — ' . xpf((float) $c['total']) . ' (' . libelleStatut($c['statut']) . ')',
+        'date'  => date('d/m/Y à H:i', strtotime($c['created_at'])),
+        'point' => $c['statut'] === 'annulee' ? 'dot-muted' : 'dot-terra',
+    ];
+}
+$activite[] = ['texte' => 'Compte créé', 'date' => $memberSince, 'point' => 'dot-sage'];
 
 /* ── Booléen : afficher la zone de confirmation de suppression */
 $showDeleteConfirm = isset($_POST['confirm_delete_step']);
@@ -119,7 +162,7 @@ $showDeleteConfirm = isset($_POST['confirm_delete_step']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon espace — Tissus Passion</title>
 
-    <!-- Polices Google (identiques à index.php) -->
+    <!-- Polices Google (identiques à accueil.php) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -136,24 +179,24 @@ $showDeleteConfirm = isset($_POST['confirm_delete_step']);
 <div class="dashboard-layout">
 
     <!-- ══════════════════════════════════════════════════════
-         NAVBAR — Identique à index.php / auth.php
+         NAVBAR — Identique à accueil.php / auth.php
     ══════════════════════════════════════════════════════ -->
     <nav class="navbar">
-        <a href="index.php" class="nav-logo">
+        <a href="accueil.php" class="nav-logo">
             Tissus <span>Passion</span>
         </a>
 
         <ul class="nav-links" id="navLinks">
-            <li><a href="index.php#accueil">Accueil</a></li>
-            <li><a href="index.php#catalogue">Catalogue</a></li>
-            <li><a href="index.php#horaires">Horaires</a></li>
-            <li><a href="index.php#lieu">Lieu</a></li>
+            <li><a href="accueil.php#accueil">Accueil</a></li>
+            <li><a href="accueil.php#catalogue">Catalogue</a></li>
+            <li><a href="accueil.php#horaires">Horaires</a></li>
+            <li><a href="accueil.php#lieu">Lieu</a></li>
             <li><a href="dashboard.php" style="color:var(--terra);">Mon compte</a></li>
         </ul>
 
         <div style="display:flex; align-items:center; gap:1rem;">
             <!-- Icône panier (utilisateur connecté) -->
-            <a href="index.php#catalogue" class="nav-cart" title="Mon panier" style="text-decoration:none;">
+            <a href="accueil.php#catalogue" class="nav-cart" title="Mon panier" style="text-decoration:none;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
                     <line x1="3" y1="6" x2="21" y2="6"/>
@@ -239,9 +282,9 @@ $showDeleteConfirm = isset($_POST['confirm_delete_step']);
             </div>
 
             <div class="dash-stat">
-                <div class="dash-stat-label">Identifiant</div>
-                <div class="dash-stat-value">#<?= str_pad($userId, 4, '0', STR_PAD_LEFT) ?></div>
-                <span class="dash-stat-badge badge-info">Compte standard</span>
+                <div class="dash-stat-label">Mes commandes</div>
+                <div class="dash-stat-value"><?= $nbCommandes ?></div>
+                <span class="dash-stat-badge badge-info"><?= xpf($totalDepense) ?> au total</span>
             </div>
         </div>
 
@@ -265,6 +308,10 @@ $showDeleteConfirm = isset($_POST['confirm_delete_step']);
                     <span class="profile-val"><?= $memberSince ?></span>
                 </div>
                 <div class="profile-row">
+                    <span class="profile-key">Type de compte</span>
+                    <span class="profile-val"><?= $isAdmin ? 'Administrateur' : 'Client' ?></span>
+                </div>
+                <div class="profile-row">
                     <span class="profile-key">Session</span>
                     <span class="profile-val active">Active</span>
                 </div>
@@ -274,32 +321,60 @@ $showDeleteConfirm = isset($_POST['confirm_delete_step']);
             <div class="dash-panel">
                 <div class="dash-panel-title">Activité récente</div>
 
+                <?php foreach ($activite as $a): ?>
                 <div class="activity-item">
-                    <div class="activity-dot dot-sage"></div>
+                    <div class="activity-dot <?= $a['point'] ?>"></div>
                     <div>
-                        <div class="activity-text">Connexion réussie</div>
-                        <div class="activity-time">À l'instant</div>
+                        <div class="activity-text"><?= e($a['texte']) ?></div>
+                        <div class="activity-time"><?= e($a['date']) ?></div>
                     </div>
                 </div>
-
-                <div class="activity-item">
-                    <div class="activity-dot dot-terra"></div>
-                    <div>
-                        <div class="activity-text">Session initialisée</div>
-                        <div class="activity-time">À l'instant</div>
-                    </div>
-                </div>
-
-                <div class="activity-item">
-                    <div class="activity-dot dot-muted"></div>
-                    <div>
-                        <div class="activity-text">Compte créé</div>
-                        <div class="activity-time"><?= $memberSince ?></div>
-                    </div>
-                </div>
+                <?php endforeach; ?>
             </div>
 
         </div><!-- /.dash-panels -->
+
+        <?php if ($isAdmin): ?>
+        <div class="dash-alert" style="margin-top:1.5rem; padding:1rem 1.2rem; border-radius:8px; background:#f7efe9; border:1px solid #e8cfc3;">
+            Vous êtes administrateur : <a href="accueil.php#admin-products" style="color:var(--terra); font-weight:600;">gérer le catalogue</a>
+            · <a href="accueil.php#admin-commandes" style="color:var(--terra); font-weight:600;">suivre les commandes</a>
+        </div>
+        <?php endif; ?>
+
+        <!-- ══════════════════════════════════════════════════
+             MES COMMANDES
+        ══════════════════════════════════════════════════ -->
+        <section class="dash-section" id="mes-commandes">
+            <div class="dash-section-header">
+                <div class="dash-section-eyebrow">Historique</div>
+                <h2 class="dash-section-title">Mes <em>commandes</em></h2>
+                <p class="dash-section-sub">Retrouvez vos commandes et leur avancement. Le paiement se fait en boutique, au retrait.</p>
+            </div>
+            <div class="dash-section-divider"></div>
+
+            <?php if (empty($mesCommandes)): ?>
+            <p style="color:var(--text-muted);">Vous n'avez pas encore passé de commande.
+                <a href="accueil.php#catalogue" style="color:var(--terra);">Découvrir le catalogue</a></p>
+            <?php else: ?>
+            <div style="display:grid; gap:1rem;">
+                <?php foreach ($mesCommandes as $c): ?>
+                <div class="dash-panel" style="padding:1.1rem 1.3rem;">
+                    <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:baseline;">
+                        <strong>Commande n°<?= (int) $c['id'] ?></strong>
+                        <span style="font-size:.85rem; color:var(--text-muted);"><?= e(date('d/m/Y à H:i', strtotime($c['created_at']))) ?></span>
+                        <span class="dash-stat-badge <?= $c['statut'] === 'annulee' ? '' : 'badge-active' ?>"><?= e(libelleStatut($c['statut'])) ?></span>
+                    </div>
+                    <ul style="margin:.7rem 0 .5rem; padding-left:1.1rem; font-size:.88rem; line-height:1.7;">
+                        <?php foreach ($lignesParCommande[$c['id']] ?? [] as $l): ?>
+                        <li><?= e($l['nom_produit']) ?> — <?= formatQty((float) $l['quantite']) ?> × <?= xpf((float) $l['prix_unitaire']) ?> = <?= xpf((float) $l['sous_total']) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <div style="text-align:right; font-weight:600;">Total : <?= xpf((float) $c['total']) ?></div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+        </section>
 
 
         <!-- ══════════════════════════════════════════════════
@@ -467,7 +542,7 @@ $showDeleteConfirm = isset($_POST['confirm_delete_step']);
     </main><!-- /.dash-main -->
 
     <!-- ══════════════════════════════════════════════════════
-         FOOTER — harmonisé avec index.php
+         FOOTER — harmonisé avec accueil.php
     ══════════════════════════════════════════════════════ -->
     <footer class="footer">
         <div class="footer-grid">
@@ -484,10 +559,10 @@ $showDeleteConfirm = isset($_POST['confirm_delete_step']);
             <div class="footer-col">
                 <h4>Navigation</h4>
                 <ul>
-                    <li><a href="index.php#accueil">Accueil</a></li>
-                    <li><a href="index.php#catalogue">Catalogue</a></li>
-                    <li><a href="index.php#horaires">Horaires</a></li>
-                    <li><a href="index.php#lieu">Lieu</a></li>
+                    <li><a href="accueil.php#accueil">Accueil</a></li>
+                    <li><a href="accueil.php#catalogue">Catalogue</a></li>
+                    <li><a href="accueil.php#horaires">Horaires</a></li>
+                    <li><a href="accueil.php#lieu">Lieu</a></li>
                     <li><a href="dashboard.php">Mon compte</a></li>
                 </ul>
             </div>

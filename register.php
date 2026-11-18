@@ -38,7 +38,12 @@ if (!preg_match('/[0-9]/', $password)) {
     $errors[] = "Le mot de passe doit contenir au moins un chiffre.";
 }
 
+if ($password !== ($_POST['password_confirm'] ?? '')) {
+    $errors[] = "Les deux mots de passe ne correspondent pas.";
+}
+
 if (!empty($errors)) {
+    $_SESSION['old_email'] = $email;
     $_SESSION['error'] = implode("\n", $errors);
     header('Location: auth.php?tab=register');
     exit;
